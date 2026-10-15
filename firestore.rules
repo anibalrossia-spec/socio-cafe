@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function member(cafeId) {
+      return signed() && exists(/databases/$(database)/documents/cafes/$(cafeId)/miembros/$(request.auth.uid));
+    }
+
+    // Datos públicos de cada cafetería (nombre, logo, planes). Solo sus usuarios los modifican.
+    match /cafes/{cafeId} {
+      allow read: if true;
+      allow create: if signed() && request.resource.data.creador == request.auth.uid;
+      allow update: if member(cafeId) && request.resource.data.creador == resource.data.creador;
+      allow delete: if false;
+
+      // Usuarios de la cafetería.
+      match /miembros/{uid} {
+        allow read: if member(cafeId);
+        allow create: if member(cafeId)
+          || (signed() && uid == request.auth.uid
+              && get(/databases/$(database)/documents/cafes/$(cafeId)).data.creador == request.auth.uid);
+        allow delete: if member(cafeId) && uid != request.auth.uid;
+        allow update: if false;
+      }
+
+      // Socios: privados de cada cafetería.
+      match /socios/{socioId} {
+        allow read, write: if member(cafeId);
+      }
+    }
+
+    // A qué cafetería pertenece cada usuario.
+    match /usuarios/{uid} {
+      allow read, create: if signed() && request.auth.uid == uid;
+      allow update, delete: if false;
+    }
+
+    // Tarjeta de consumo: se abre solo con el número exacto, no se pueden listar.
+    match /tarjetas/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if member(request.resource.data.cafeId);
+      allow update: if member(resource.data.cafeId) && request.resource.data.cafeId == resource.data.cafeId;
+      allow delete: if member(resource.data.cafeId);
+    }
+  }
+}

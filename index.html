@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#CDB8E8">
+<meta name="description" content="Membresías de café: el socio ve su tarjeta de consumo y cada cafetería registra el café del día.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Socio Café">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Socio Café</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: portada de servicio (tesis + tarjeta de socio con el logo de la cafetería) → cómo funciona → planes → cafeterías adheridas; el registro y el panel de cada cafetería se abren en la misma página. */
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F5F2F9; --line:#E5E0EC;
+  --ink:#2A2730; --muted:#6B6575;
+  --accent:#CDB8E8; --on-accent:#2A2730; --ring:#8A73C4; --crema:#E8935F; --hl:#FFE2CF; --hl-ink:#2A2730;
+  --c-clasica:#8EC3E6; --c-premium:#F2B985; --ch-c:#3D7FB8; --ch-p:#C7782C;
+  --ok:#2F6B45; --ok-bg:#DDF3E4; --warn:#7A5A00; --warn-bg:#FFF1CC; --bad:#A33A3A; --bad-bg:#FCE1E1;
+  --scrim:rgba(20,16,26,.45);
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000; --surface:#0F0E11; --surface-2:#1B191F; --line:#2D2A32;
+    --ink:#F3EFF7; --muted:#A8A1B1;
+    --accent:#CDB8E8; --on-accent:#1F1A26; --ring:#CDB8E8; --crema:#F2A97A; --hl:#F6CDB0; --hl-ink:#1F1A26;
+    --c-clasica:#A9D3F0; --c-premium:#F5C9A0; --ch-c:#4A90D9; --ch-p:#C47528;
+    --ok:#9EDDB3; --ok-bg:#12261A; --warn:#F5D98A; --warn-bg:#2A230F; --bad:#F2A7A7; --bad-bg:#2E1515;
+    --scrim:rgba(0,0,0,.65); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#000000; --surface:#0F0E11; --surface-2:#1B191F; --line:#2D2A32;
+    --ink:#F3EFF7; --muted:#A8A1B1;
+    --accent:#CDB8E8; --on-accent:#1F1A26; --ring:#CDB8E8; --crema:#F2A97A; --hl:#F6CDB0; --hl-ink:#1F1A26;
+    --c-clasica:#A9D3F0; --c-premium:#F5C9A0; --ch-c:#4A90D9; --ch-p:#C47528;
+    --ok:#9EDDB3; --ok-bg:#12261A; --warn:#F5D98A; --warn-bg:#2A230F; --bad:#F2A7A7; --bad-bg:#2E1515;
+    --scrim:rgba(0,0,0,.65); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{font-family:var(--body);font-size:15px;line-height:1.5;background:var(--bg);color:var(--ink);
+  padding-block:18px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(34px,6vw,62px);line-height:1.02;font-weight:700;letter-spacing:-.035em}
+h2{font-size:clamp(24px,3.4vw,32px);font-weight:650}
+h3{font-size:17px;font-weight:650}
+p{margin:0}
+.muted{color:var(--muted)}
+.num,.mono{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* encabezado */
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;color:var(--ink);cursor:pointer;font:inherit}
+.brand svg{flex:none}
+.brand b{font:700 21px/1 var(--display);letter-spacing:-.02em}
+.top-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--surface)}
+.theme button{border:0;background:none;color:var(--muted);padding:5px 12px;border-radius:999px;font:500 13px var(--body);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.theme button:hover{color:var(--ink)}
+.theme button i{width:11px;height:11px;border-radius:50%;border:1px solid var(--muted)}
+.theme button[data-th="light"] i{background:#fff} .theme button[data-th="dark"] i{background:#000}
+.theme button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.who{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+
+.logo{width:var(--s,44px);height:var(--s,44px);border-radius:50%;flex:none;object-fit:cover;background:var(--surface-2);border:1px solid var(--line);display:inline-grid;place-items:center;font:700 calc(var(--s,44px)*.38) var(--display);color:var(--muted);overflow:hidden}
+.logo img{width:100%;height:100%;object-fit:cover}
+
+/* botones y campos */
+.btn{height:42px;padding:0 16px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.primary:hover:not(:disabled){background:var(--accent);filter:brightness(1.15)}
+.btn.lg{height:52px;padding:0 22px;font-size:16px;font-weight:700}
+.btn.sm{height:32px;padding:0 10px;font-size:13px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;padding:4px;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px}
+.link:hover{color:var(--ink)}
+:is(.btn,.link,.brand,.tab,input,select,textarea,button):focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.lbl{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.inp{width:100%;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit}
+.inp.xl{height:54px;font-size:18px}
+.field{display:flex;flex-direction:column;min-width:0}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fgrid .full{grid-column:1/-1}
+.help{font-size:13px;color:var(--muted);margin-top:5px}
+.ferr{color:var(--bad);font-size:14px;min-height:20px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:3px 10px 3px 8px;border-radius:999px;background:var(--surface-2);font-size:13px;font-weight:500;white-space:nowrap}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--plan)}
+.clasica{--plan:var(--c-clasica)} .premium{--plan:var(--c-premium)}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.tag-ej{display:inline-block;padding:1px 7px;border-radius:4px;border:1px dashed var(--muted);font:700 11px var(--body);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.note{padding:12px 14px;border-radius:8px;background:var(--warn-bg);border:1px solid var(--line);font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+
+/* portada */
+.hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:40px;align-items:center;padding-top:20px}
+.hero-copy{display:flex;flex-direction:column;gap:20px;min-width:0}
+.hero-copy h1 em{font-style:normal;color:var(--hl-ink);background:var(--hl);border-radius:.18em;padding:0 .12em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.lead{font-size:18px;max-width:52ch;color:var(--muted)}
+.cta{display:flex;gap:10px;flex-wrap:wrap}
+.facts{display:flex;gap:22px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.facts b{display:block;font:600 22px/1.1 var(--display);color:var(--ink)}
+
+/* tarjeta de socio */
+.memb{position:relative;border-radius:18px;padding:22px;background:var(--accent);color:var(--on-accent);display:flex;flex-direction:column;gap:18px;max-width:440px;width:100%;justify-self:center;box-shadow:0 24px 50px -24px rgba(0,0,0,.45)}
+.memb .row1{display:flex;align-items:center;gap:12px}
+.memb .row1 .logo{--s:52px;border-color:transparent}
+.memb .cn{font:700 20px/1.1 var(--display);overflow-wrap:anywhere}
+.memb .cs{font-size:13px;opacity:.75}
+.memb .socio{font:600 26px/1.1 var(--display);letter-spacing:-.02em}
+.memb .meta{display:flex;justify-content:space-between;gap:10px;font:500 12px var(--mono);opacity:.8;flex-wrap:wrap}
+.memb .tag-ej{position:absolute;top:14px;right:14px;border-color:currentColor;color:inherit;opacity:.7}
+.cups{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.cups span{aspect-ratio:1;border-radius:50%;border:1.5px solid currentColor;opacity:.35;max-width:100%}
+.cups span.u{opacity:1;background:currentColor;box-shadow:inset 0 0 0 3px var(--accent)}
+.cups.long{grid-template-columns:repeat(30,1fr);gap:3px}
+.cups.long span{border-width:1px}
+.cups.long span.t{outline-offset:1px}
+.cups span.f{border-style:dashed;opacity:.3}
+.cups span.t{opacity:1;outline:2px solid var(--crema);outline-offset:2px}
+.memb .st{position:absolute;top:14px;right:14px;padding:2px 9px;border-radius:999px;font:700 11px var(--body);letter-spacing:.05em;text-transform:uppercase;background:var(--on-accent);color:var(--accent)}
+.memb .st.bad{background:var(--bad-bg);color:var(--bad)}
+.memb .tel{font:500 13px var(--mono);opacity:.75}
+.ficha{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px;align-items:start}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink);display:inline-block}
+.legend i.u{background:var(--ink)} .legend i.f{border-style:dashed;opacity:.5} .legend i.n{opacity:.4} .legend i.t{outline:2px solid var(--crema);outline-offset:1px}
+@media (max-width:880px){.ficha{grid-template-columns:minmax(0,1fr)}}
+
+/* pasos */
+.sec{display:flex;flex-direction:column;gap:22px}
+.sec-h{display:flex;flex-direction:column;gap:8px;max-width:640px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;counter-reset:s}
+.steps li{counter-increment:s;padding-top:16px;border-top:2px solid var(--ink);display:flex;flex-direction:column;gap:8px}
+.steps li::before{content:"Paso " counter(s);font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.plan{display:flex;flex-direction:column;gap:10px;border-top:6px solid var(--plan)}
+.plan ul{margin:0;padding-left:18px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.dir{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.dir .item{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:10px;min-width:0}
+.dir .item div{min-width:0}
+.dir .item b{display:block;overflow-wrap:anywhere}
+.empty{padding:22px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
+.join{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;padding:28px;border-radius:14px;background:var(--surface-2)}
+
+/* registro */
+.form-wrap{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:32px;align-items:start}
+.logo-pick{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo-pick .logo{--s:84px}
+.preview-side{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:12px}
+
+/* panel */
+.panel-h{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between}
+.panel-h .id{display:flex;align-items:center;gap:14px;min-width:0}
+.panel-h .id .logo{--s:64px}
+.panel-h h1{font-size:clamp(26px,4vw,38px)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:11px 16px;font:500 15px var(--body);color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:700}
+.split{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;align-items:start}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+.result{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.result:hover{background:var(--surface-2)}
+.result small{grid-column:1/-1;color:var(--muted);font-size:13px}
+.result b{overflow-wrap:anywhere}
+.done{display:flex;gap:12px;align-items:center;padding:14px;border-radius:8px;background:var(--ok-bg);color:var(--ok);font-weight:600}
+.big-n{font:700 52px/1 var(--display);letter-spacing:-.03em}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+.scroll{overflow-x:auto}
+.tbl{width:100%;min-width:640px;border-collapse:collapse}
+.tbl th{text-align:left;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.inline{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+#toast{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;pointer-events:none;z-index:40;padding:0 16px}
+#toast div{pointer-events:auto;max-width:520px;padding:12px 18px;border-radius:8px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:500}
+#toast div.err{background:var(--bad);color:var(--bad-bg)}
+
+.benef{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.benef .b{display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:12px;background:var(--surface-2)}
+.benef .b h3{font-size:18px}
+.benef .b.star{grid-column:span 2;background:var(--hl);color:var(--hl-ink)}
+.benef .b.star p{color:var(--hl-ink);opacity:.85}
+.extras{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.extras span{padding:5px 12px;border-radius:999px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:500;border:1px solid var(--line)}
+.est{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:center}
+.est .fgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.est-out b{display:block;font:700 clamp(34px,5vw,48px)/1 var(--display);letter-spacing:-.03em}
+@media (max-width:880px){.benef{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.est{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.benef{grid-template-columns:minmax(0,1fr)}.benef .b.star{grid-column:auto}.est .fgrid{grid-template-columns:minmax(0,1fr)}}
+.store-h{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:center;padding:24px;border-radius:16px;background:var(--surface-2)}
+.store-h .logo{--s:96px}
+.store-h h1{font-size:clamp(30px,5vw,48px)}
+.store-meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted);margin-top:6px}
+.perks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.perk{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:12px;border:1px solid var(--line)}
+.perk.hi{background:var(--hl);color:var(--hl-ink);border-color:transparent}
+.perk.hi p{color:var(--hl-ink);opacity:.85}
+.perk p{color:var(--muted);font-size:14px}
+.pricebig{font:700 28px/1.1 var(--display);letter-spacing:-.02em}
+.acc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:center}
+.dir .item{cursor:pointer;background:var(--surface);color:var(--ink);font:inherit;text-align:left;width:100%}
+.dir .item:hover{background:var(--surface-2)}
+@media (max-width:560px){.store-h{grid-template-columns:minmax(0,1fr)}.store-h .logo{--s:72px}.acc{grid-template-columns:minmax(0,1fr)}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.kpi{padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.kpi b{display:block;font:700 clamp(26px,3vw,34px)/1.1 var(--display);white-space:nowrap;letter-spacing:-.025em;margin-top:6px}
+.kpi span{font-size:13px;color:var(--muted)}
+.chart-wrap{overflow-x:auto;position:relative}
+.chart-wrap svg{display:block;min-width:620px;width:100%;height:auto}
+.ch-c{fill:var(--ch-c)} .ch-p{fill:var(--ch-p)}
+.gl{stroke:var(--line);stroke-width:1}
+.ax{fill:var(--muted);font:11px var(--mono)}
+.hit{fill:transparent;cursor:default}
+.hit:hover{fill:var(--line);fill-opacity:.35}
+.legend2{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend2 span{display:inline-flex;align-items:center;gap:6px}
+.legend2 i{width:12px;height:12px;border-radius:3px;display:inline-block}
+#ch-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;padding:8px 10px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-110%);z-index:3}
+.bar-h{display:grid;grid-template-columns:44px 1fr 44px;gap:10px;align-items:center;font-size:14px;padding:4px 0}
+.bar-h .t{height:12px;border-radius:0 4px 4px 0;background:var(--ch-c);min-width:2px}
+.usem{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--surface-2);vertical-align:middle;margin-right:8px;overflow:hidden}
+.usem b{display:block;height:100%;background:var(--ch-c)}
+@media (max-width:880px){
+  .hero,.form-wrap,.split{grid-template-columns:minmax(0,1fr)}
+  .steps{grid-template-columns:minmax(0,1fr)}
+  .preview-side{position:static}
+}
+@media (max-width:560px){
+  .fgrid,.plans{grid-template-columns:minmax(0,1fr)}
+  .join{grid-template-columns:minmax(0,1fr)}
+  .wrap{gap:44px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .memb{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+  .memb .cups span.u{animation:fill .35s ease both;animation-delay:calc(var(--i)*60ms + .3s)}
+  @keyframes rise{from{transform:translateY(14px) rotate(-1.5deg)}to{transform:none}}
+  @keyframes fill{from{transform:scale(.4)}to{transform:none}}
+}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top" id="top"></header>
+  <main id="view" aria-live="polite"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var pad=function(n){return String(n).padStart(2,'0')};
+var ymd=function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+var hoyS=function(){return ymd(new Date())};
+var addDays=function(s,n){var a=s.split('-').map(Number),d=new Date(a[0],a[1]-1,a[2],12);d.setDate(d.getDate()+n);return ymd(d)};
+var fmtD=function(s){if(!s)return '—';var a=s.split('-');return a[2]+'/'+a[1]+'/'+a[0]};
+var money=function(n){n=Number(n)||0;return '$ '+n.toLocaleString('es-AR')};
+var initials=function(n){return String(n||'?').trim().split(/\s+/).slice(0,2).map(function(w){return w[0]||''}).join('').toUpperCase()||'?'};
+var DUR=180;
+var PLAN={clasica:{nombre:'Clásica',prod:'Café solo'},premium:{nombre:'Premium',prod:'Café con leche'}};
+var LS='socio-cafe:local',THK='socio-cafe:fondo';
+function curTheme(){var t=document.documentElement.getAttribute('data-theme');if(t)return t;return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+try{var _t=localStorage.getItem(THK);if(_t==='light'||_t==='dark')document.documentElement.setAttribute('data-theme',_t)}catch(_){}
+
+var S={view:'tienda',tab:'mostrador',mode:'pending',uid:null,cafe:null,socios:[],dir:[],q:'',sel:null,draft:null,err:'',busy:false,canWrite:null};
+var DB=null,USER=null,unsubS=null,unsubT=null;
+var DL={save:function(o){return new Promise(function(res){var u=URL.createObjectURL(o.data),a=document.createElement('a');a.href=u;a.download=o.filename;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove()},500);res()})}};
+/* ---------- sesión (Firebase Auth) ---------- */
+S.cafeId=null;S.mine=[];S.miembros=[];S.newCafe=false;S.out=true;S.user='';
+var AUTH=null,unsubCafe=null,unsubMiem=null;
+var DOM_U='@sociocafe.app';
+function emailDe(u){return String(u||'').trim().toLowerCase()+DOM_U}
+function ownerOf(id){return id}
+function cafesFromDoc(id,d){return d&&d.nombre?[Object.assign({id:id},d)]:[]}
+function pickCafe(id,d){return d?Object.assign({id:id},d):null}
+function sesSave(){return Promise.resolve()}
+function credList(){return S.miembros}
+function errAuth(e){var c=e&&e.code||'';
+  if(/email-already-in-use/.test(c))return 'Ese usuario ya está en uso. Elegí otro.';
+  if(/weak-password/.test(c))return 'La contraseña tiene que tener al menos 6 caracteres.';
+  if(/wrong-password|user-not-found|invalid-credential|invalid-login|invalid-email/.test(c))return 'Usuario o contraseña incorrectos.';
+  if(/too-many-requests/.test(c))return 'Demasiados intentos. Esperá unos minutos y probá de nuevo.';
+  if(/requires-recent-login/.test(c))return 'Por seguridad, cerrá sesión, volvé a entrar y probá de nuevo.';
+  if(/network/.test(c))return 'Sin conexión a internet. Probá de nuevo.';
+  return 'No se pudo completar. Probá de nuevo.';}
+function validarUsuario(u,p,p2){
+  u=String(u||'').trim().toLowerCase();
+  if(!/^[a-z0-9._-]{3,30}$/.test(u))return 'El usuario tiene que tener de 3 a 30 letras o números, sin espacios.';
+  if(String(p||'').length<6)return 'La contraseña tiene que tener al menos 6 caracteres.';
+  if(p!==p2)return 'Las contraseñas no coinciden.';
+  return '';}
+function logout(){if(AUTH)AUTH.signOut();S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
+function login(user,pass){
+  var u=String(user||'').trim().toLowerCase();
+  if(!u||!pass){S.loginErr='Usuario o contraseña incorrectos.';render();return}
+  S.loginBusy=true;render();
+  AUTH.signInWithEmailAndPassword(emailDe(u),pass).then(function(){S.loginBusy=false;S.loginErr='';S.user=u;S.goHome=true},function(e){S.loginBusy=false;S.loginErr=errAuth(e);render();var f=$('#l-pass');if(f)f.focus()});
+}
+function setCreds(id,user,pass,pass2){
+  var m=validarUsuario(AUTH.currentUser?S.user||'xxx':user,pass,pass2);if(m)return Promise.reject(m);
+  return AUTH.currentUser.updatePassword(pass).catch(function(e){throw errAuth(e)});
+}
+function addUser(cafeId,user,pass,pass2){
+  var m=validarUsuario(user,pass,pass2);if(m)return Promise.reject(m);
+  var u=String(user).trim().toLowerCase();
+  var sec=firebase.apps.find(function(a){return a.name==='sec'})||firebase.initializeApp(window.SOCIO_CAFE_FIREBASE,'sec');
+  var sa=sec.auth();
+  return sa.setPersistence(firebase.auth.Auth.Persistence.NONE).then(function(){return sa.createUserWithEmailAndPassword(emailDe(u),pass).then(function(cred){
+    var nuid=cred.user.uid;
+    return sec.firestore().doc('usuarios/'+nuid).set({cafeId:cafeId,u:u}).then(function(){return sa.signOut()}).then(function(){return DB.doc('cafes/'+cafeId+'/miembros/'+nuid).set({u:u,alta:hoyS()})});
+  })}).catch(function(e){throw typeof e==='string'?e:errAuth(e)});
+}
+function quitarUsuario(id,u){var m=S.miembros.find(function(x){return x.u===u});if(!m||S.miembros.length<2)return;DB.doc('cafes/'+id+'/miembros/'+m.uid).delete().then(function(){toast('Usuario quitado')},function(){toast('No se pudo quitar el usuario.',true)})}
+function setActive(id){
+  if(id===S.cafeId&&unsubCafe)return;
+  S.cafeId=id;
+  if(unsubCafe){unsubCafe();unsubCafe=null}if(unsubMiem){unsubMiem();unsubMiem=null}
+  if(!id){S.cafe=null;S.mine=[];subSocios();render();return}
+  unsubCafe=DB.doc('cafes/'+id).onSnapshot(function(sn){S.cafe=sn.exists?sn.data():null;S.mine=S.cafe?[Object.assign({id:id},S.cafe)]:[];
+    if(S.goHome&&S.cafe){S.goHome=false;S.view='home';window.scrollTo(0,0);toast('Sesión iniciada en '+S.cafe.nombre)}
+    render()},function(){});
+  unsubMiem=DB.collection('cafes/'+id+'/miembros').onSnapshot(function(q){S.miembros=q.docs.map(function(d){return Object.assign({uid:d.id},d.data())});render()},function(){});
+  subSocios();
+}
+S.member={cafe:'',code:'',card:null,cafeData:null,err:'',busy:false};
+
+function logoHTML(c,size){
+  var st=size?' style="--s:'+size+'px"':'';
+  if(c&&c.logo) return '<span class="logo"'+st+'><img src="'+esc(c.logo)+'" alt="Logo de '+esc(c.nombre)+'"></span>';
+  return '<span class="logo"'+st+' aria-hidden="true"><svg viewBox="0 0 34 34" style="width:72%;height:72%">'+CUP('','var(--muted)','var(--hl)')+'</svg></span>';
+}
+var CUP=function(bg,fg,crema){return (bg?'<circle cx="17" cy="17" r="16" fill="'+bg+'"/>':'')+
+  '<path d="M13.4 6.8c-1.1 1.3 1.1 2.4 0 3.9M17.2 5.8c-1.1 1.3 1.1 2.4 0 3.9" fill="none" stroke="'+fg+'" stroke-width="1.4" stroke-linecap="round"/>'+
+  '<path d="M8.6 13.2h14.2v4.6a6.4 6.4 0 0 1-6.4 6.4h-1.4a6.4 6.4 0 0 1-6.4-6.4z" fill="'+fg+'"/>'+
+  '<ellipse cx="15.7" cy="13.2" rx="7.1" ry="1.4" fill="'+crema+'"/>'+
+  '<path d="M22.6 15h1.3a2.6 2.6 0 0 1 0 5.2h-1.9" fill="none" stroke="'+fg+'" stroke-width="1.7"/>'+
+  '<rect x="6.4" y="25.4" width="19.6" height="1.9" rx=".95" fill="'+fg+'"/>'};
+var MARK='<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">'+CUP('var(--accent)','var(--on-accent)','var(--crema)')+'</svg>';
+
+function toast(m,err){var t=$('#toast');t.innerHTML='<div class="'+(err?'err':'')+'">'+esc(m)+'</div>';clearTimeout(toast.t);toast.t=setTimeout(function(){t.innerHTML=''},3200)}
+
+/* ---------- almacenamiento ---------- */
+function localGet(){try{return JSON.parse(localStorage.getItem(LS))||null}catch(_){return null}}
+function localPut(o){try{localStorage.setItem(LS,JSON.stringify(o));return true}catch(_){return false}}
+function socioCol(){return DB.collection('cafes/'+S.cafeId+'/socios')}
+function tPath(id,code){return 'tarjetas/'+code}
+function saveCafe(c,id){return DB.doc('cafes/'+id).set(c,{merge:true})}
+function subSocios(){
+  if(unsubS){unsubS();unsubS=null}
+  S.socios=[];S.sel=null;
+  if(!S.cafeId)return;
+  unsubS=socioCol().onSnapshot(function(q){S.socios=q.docs.map(function(d){return Object.assign({id:d.id},d.data())});render()},function(){});
+}
+function saveSocio(s){
+  if(!s.codigo)s.codigo=newCode();
+  var d=Object.assign({},s);delete d.id;var cid=S.cafeId;
+  return socioCol().doc(s.id).set(d).then(function(){return DB.doc(tPath(cid,s.codigo)).set({cafeId:cid,nombre:s.nombre,plan:s.plan,pago:s.pago||'',vence:s.vence||'',usos:s.usos||[]})});
+}
+function delSocio(id){
+  var x=S.socios.find(function(z){return z.id===id}),cid=S.cafeId;
+  return socioCol().doc(id).delete().then(function(){if(x&&x.codigo)return DB.doc(tPath(cid,x.codigo)).delete().catch(function(){})});
+}
+function boot(){
+  var cfg=window.SOCIO_CAFE_FIREBASE;
+  if(!window.firebase||!cfg||!cfg.apiKey||/PEGAR/.test(cfg.apiKey)){S.mode='sinconfig';render();return}
+  firebase.initializeApp(cfg);
+  DB=firebase.firestore();AUTH=firebase.auth();S.mode='db';
+  watchDir();
+  AUTH.onAuthStateChanged(function(u){
+    if(!u){S.uid=null;S.out=true;S.user='';setActive(null);render();return}
+    S.uid=u.uid;S.out=false;S.user=(u.email||'').replace(DOM_U,'');
+    DB.doc('usuarios/'+u.uid).get().then(function(sn){
+      var cid=sn.exists&&sn.data().cafeId;
+      if(!cid){if(!S.creating){AUTH.signOut()}return}
+      DB.doc('cafes/'+cid+'/miembros/'+u.uid).get().then(function(m){
+        if(!m.exists){S.loginErr='Este usuario ya no tiene acceso a la cafetería.';AUTH.signOut();render();return}
+        setActive(cid);
+      },function(){S.loginErr='Este usuario ya no tiene acceso a la cafetería.';AUTH.signOut();render()});
+    },function(){AUTH.signOut()});
+  });
+  setTimeout(function(){if(S.view==='tienda'&&!S.tiendaId)autoMember()},0);
+  if(S.view==='tienda'&&S.tiendaId)openTienda(S.tiendaId);
+  render();
+}
+function crearCafeteria(c,user,pass){
+  var u=String(user).trim().toLowerCase();S.creating=true;
+  return AUTH.createUserWithEmailAndPassword(emailDe(u),pass).then(function(cred){
+    var uid=cred.user.uid,ref=DB.collection('cafes').doc(),cid=ref.id;
+    return ref.set(Object.assign({},c,{creador:uid})).then(function(){return DB.doc('cafes/'+cid+'/miembros/'+uid).set({u:u,alta:hoyS()})})
+      .then(function(){return DB.doc('usuarios/'+uid).set({cafeId:cid,u:u})}).then(function(){S.creating=false;S.user=u;return cid});
+  }).catch(function(e){S.creating=false;throw typeof e==='string'?e:errAuth(e)});
+}
+function watchDir(){
+  DB.collection('cafes').limit(300).onSnapshot(function(q){
+    var all=q.docs.map(function(d){return Object.assign({id:d.id},d.data())}).filter(function(c){return c.nombre});
+    S.dirAll=all;S.dir=all;
+    if(S.view==='home'||S.view==='tienda')render();
+  },function(){});
+}
+
+
+
+S.est={n:40,p:30,t:2500};
+function estOut(){var n=Number(S.est.n)||0,p=Math.min(100,Number(S.est.p)||0)/100,t=Number(S.est.t)||0,v=26;
+  var mes=Math.round(n*p*t*v),sem=mes*6;
+  return '<span class="eyebrow">Venta extra estimada</span><b class="num">'+money(mes)+'</b><span class="muted">por mes, con '+v+' días de atención</span><p class="muted" style="margin-top:8px;font-size:14px">En los 180 días de la membresía: <b class="num" style="color:var(--ink)">'+money(sem)+'</b></p>';}
+
+
+/* ---------- estadísticas ---------- */
+function diasTrans(s){var h=hoyS(),p=s.pago||h;if(p>h)return 0;var n=Math.round((new Date(h+'T12:00')-new Date(p+'T12:00'))/864e5)+1;return Math.min(DUR,n)}
+function usoDe(s){var P=periodo(s),t=diasTrans(s);return {used:P.used,trans:t,pct:t?Math.round(P.used/t*100):0}}
+function niceMax(v){if(v<=4)return 4;var m=Math.pow(10,Math.floor(Math.log10(v))),f=v/m;return (f<=2?2:f<=5?5:10)*m}
+function tabStats(){
+  var soc=S.socios,h=hoyS(),c=S.cafe;
+  if(!soc.length)return '<div class="empty">Cuando cargues socios y registres sus cafés, acá vas a ver las estadísticas de consumo.</div>';
+  var vig=soc.filter(function(x){return vigencia(x).cls!=='bad'}),pv=soc.filter(function(x){return vigencia(x).cls==='warn'}),venc=soc.length-vig.length;
+  var dias=[];for(var i=29;i>=0;i--)dias.push(addDays(h,-i));
+  var porDia={};dias.forEach(function(d){porDia[d]={c:0,p:0}});
+  var hoyN=0,tot30=0,dow=[0,0,0,0,0,0,0],d90=addDays(h,-89);
+  soc.forEach(function(x){(x.usos||[]).forEach(function(u){if(porDia[u]){porDia[u][x.plan==='premium'?'p':'c']++;tot30++}if(u===h)hoyN++;if(u>=d90&&u<=h)dow[new Date(u+'T12:00').getDay()]++})});
+  var usos=vig.map(usoDe).filter(function(u){return u.trans>0}),prom=usos.length?Math.round(usos.reduce(function(a,u){return a+u.pct},0)/usos.length):0;
+  var ingreso=vig.reduce(function(a,x){return a+(Number(c[x.plan==='premium'?'precioPremium':'precioClasica'])||0)},0);
+  var kp=function(v,l,sub){return '<div class="kpi"><span>'+l+'</span><b class="num">'+v+'</b>'+(sub?'<span>'+sub+'</span>':'')+'</div>'};
+  var kpis='<div class="kpis">'+kp(vig.length,'Socios vigentes',(pv.length?pv.length+' por vencer · ':'')+venc+(venc===1?' vencido':' vencidos'))+kp(hoyN,'Cafés entregados hoy','de '+vig.length+' socios vigentes')+
+    kp(tot30,'Cafés en los últimos 30 días','promedio '+(Math.round(tot30/30*10)/10).toString().replace('.',',')+' por día')+kp(prom+'%','Uso promedio de la membresía','cafés tomados sobre días transcurridos')+
+    (ingreso?kp(money(ingreso).replace(' ','\u00a0'),'Cobrado por socios vigentes','según el precio de cada plan'):'')+'</div>';
+  // chart
+  var W=720,H=230,L=34,R=8,T=12,B=28,pw=W-L-R,ph=H-T-B,mx=niceMax(Math.max.apply(null,dias.map(function(d){return porDia[d].c+porDia[d].p}))||1);
+  var bw=pw/30,g='',ticks=[0,mx/2,mx];
+  ticks.forEach(function(t){var y=T+ph-ph*t/mx;g+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/><text class="ax" x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end">'+t+'</text>'});
+  dias.forEach(function(d,i){var v=porDia[d],x=L+i*bw+2,w=Math.max(2,bw-4),yb=T+ph;
+    var hc=ph*v.c/mx,hp=ph*v.p/mx;
+    if(v.c)g+='<rect class="ch-c" x="'+x+'" y="'+(yb-hc)+'" width="'+w+'" height="'+Math.max(0,hc-(v.p?1:0))+'" rx="'+(v.p?0:3)+'"/>';
+    if(v.p)g+='<rect class="ch-p" x="'+x+'" y="'+(yb-hc-hp)+'" width="'+w+'" height="'+(hp-(v.c?1:0))+'" rx="3"/>';
+    if(i%5===4||i===29)g+='<text class="ax" x="'+(x+w/2)+'" y="'+(H-8)+'" text-anchor="middle">'+fmtD(d).slice(0,5)+'</text>';
+    g+='<rect class="hit" data-tip="'+esc(fmtD(d).slice(0,5)+' · '+(v.c+v.p)+' cafés · Clásica '+v.c+' · Premium '+v.p)+'" x="'+(L+i*bw)+'" y="'+T+'" width="'+bw+'" height="'+ph+'"/>'});
+  var chart='<div class="card stack"><div class="sec-h" style="margin:0"><h3>Cafés entregados por día</h3><span class="muted" style="font-size:14px">Últimos 30 días, por plan</span></div>'+
+    '<div class="legend2"><span><i style="background:var(--ch-c)"></i>Clásica · café solo</span><span><i style="background:var(--ch-p)"></i>Premium · café con leche</span></div>'+
+    '<div class="chart-wrap" id="ch-wrap"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Cafés entregados por día en los últimos 30 días">'+g+'</svg></div></div>';
+  // by plan
+  var plan=function(k){var xs=vig.filter(function(x){return x.plan===k}),u=xs.map(usoDe).filter(function(z){return z.trans>0});
+    var c30=dias.reduce(function(a,d){return a+porDia[d][k==='premium'?'p':'c']},0);
+    return '<tr><td><span class="chip '+k+'"><i></i>'+PLAN[k].nombre+'</span></td><td class="num">'+xs.length+'</td><td class="num">'+c30+'</td><td class="num">'+(u.length?Math.round(u.reduce(function(a,z){return a+z.pct},0)/u.length):0)+'%</td></tr>'};
+  var porPlan='<div class="card stack"><h3>Por plan</h3><div class="scroll"><table class="tbl" style="min-width:420px"><thead><tr><th>Plan</th><th>Socios vigentes</th><th>Cafés 30 días</th><th>Uso promedio</th></tr></thead><tbody>'+plan('clasica')+plan('premium')+'</tbody></table></div></div>';
+  // day of week
+  var nombres=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],orden=[1,2,3,4,5,6,0],mxd=Math.max.apply(null,dow)||1;
+  var semana='<div class="card stack"><h3>Días con más movimiento</h3><span class="muted" style="font-size:14px">Cafés por día de la semana, últimos 90 días</span>'+
+    orden.map(function(k){return '<div class="bar-h"><span>'+nombres[k]+'</span><span><span class="t" style="display:block;width:'+(dow[k]/mxd*100)+'%"></span></span><span class="num" style="text-align:right">'+dow[k]+'</span></div>'}).join('')+'</div>';
+  // ranking
+  var rows=soc.map(function(x){var u=usoDe(x),ul=(x.usos||[]).slice().sort().reverse()[0],vg=vigencia(x),hace=ul?Math.round((new Date(h+'T12:00')-new Date(ul+'T12:00'))/864e5):null;return {x:x,u:u,ul:ul,vg:vg,hace:hace}})
+    .sort(function(a,b){return b.u.pct-a.u.pct||b.u.used-a.u.used});
+  var tabla='<div class="card stack"><div class="sec-h" style="margin:0"><h3>Consumo de cada socio</h3><span class="muted" style="font-size:14px">Ordenado de mayor a menor uso de la membresía</span></div><div class="scroll"><table class="tbl"><thead><tr><th>Socio</th><th>Plan</th><th>Cafés</th><th>Uso</th><th>Último café</th><th>Estado</th></tr></thead><tbody>'+
+    rows.map(function(r){return '<tr><td><button class="link" style="font-size:15px;font-weight:700;color:var(--ink);padding:0" data-pick="'+r.x.id+'">'+esc(r.x.nombre)+'</button></td><td><span class="chip '+r.x.plan+'"><i></i>'+PLAN[r.x.plan].nombre+'</span></td>'+
+      '<td class="num">'+r.u.used+' <span class="muted">de '+r.u.trans+' días</span></td><td class="num"><span class="usem"><b style="width:'+Math.min(100,r.u.pct)+'%"></b></span>'+r.u.pct+'%</td>'+
+      '<td>'+(r.ul?fmtD(r.ul).slice(0,5)+(r.hace>=7&&r.vg.cls!=='bad'?' <span class="pill warn">hace '+r.hace+' días</span>':''):'<span class="muted">Nunca</span>')+'</td><td><span class="pill '+r.vg.cls+'">'+(r.vg.cls==='bad'?'Vencida':r.vg.cls==='warn'?'Por vencer':'Vigente')+'</span></td></tr>'}).join('')+
+    '</tbody></table></div></div>';
+  return '<div class="stack" style="gap:20px">'+kpis+chart+'<div class="split">'+porPlan+semana+'</div>'+tabla+'</div>';
+}
+document.addEventListener('mousemove',function(e){var w=document.getElementById('ch-wrap');if(!w)return;var t=document.getElementById('ch-tip');var hit=e.target.closest&&e.target.closest('.hit');
+  if(!hit){if(t)t.remove();return}
+  if(!t){t=document.createElement('div');t.id='ch-tip';w.appendChild(t)}
+  var r=w.getBoundingClientRect(),x=e.clientX-r.left;t.textContent=hit.getAttribute('data-tip');t.style.left=(x+w.scrollLeft)+'px';t.style.top=(e.clientY-r.top)+'px';t.style.transform='translate('+(x>r.width-150?'-100%':x<150?'0':'-50%')+',-115%)';});
+/* ---------- app del socio ---------- */
+var MK='socio-cafe:mitarjeta';
+var LEGEND='<div class="legend"><span><i class="u"></i>Café entregado</span><span><i class="n"></i>Sin canjear</span><span><i class="f"></i>Por venir</span><span><i class="t"></i>Hoy</span></div>';
+function newCode(){var a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r='';var b=new Uint8Array(6);try{crypto.getRandomValues(b)}catch(_){for(var i=0;i<6;i++)b[i]=Math.random()*256}for(var j=0;j<6;j++)r+=a[b[j]%a.length];return r}
+function memGet(){try{return JSON.parse(localStorage.getItem(MK))||null}catch(_){return null}}
+function memPut(o){try{if(o)localStorage.setItem(MK,JSON.stringify(o));else localStorage.removeItem(MK)}catch(_){}}
+function loadMember(cafe,code){
+  var M=S.member;M.cafe=cafe;M.code=code;M.err='';M.busy=true;M.card=null;
+  if(unsubT){unsubT();unsubT=null}
+  if(!DB){M.busy=false;M.err='Para ver tu tarjeta necesitás abrir Socio Café con la cuenta a la que la cafetería te compartió la página.';render();return}
+  M.cafeData=S.dir.find(function(c){return c.id===cafe})||null;
+  if(!M.cafeData)DB.doc('cafes/'+ownerOf(cafe)).get().then(function(sn){var pc=sn.exists&&pickCafe(cafe,sn.data());if(pc){M.cafeData=pc;render()}},function(){});
+  try{
+    unsubT=DB.doc(tPath(cafe,code)).onSnapshot(function(sn){
+      if(S.member!==M||M.code!==code)return;
+      M.busy=false;
+      if(sn.exists){M.card=sn.data();M.err='';memPut({cafe:cafe,code:code})}
+      else{M.card=null;M.err='No encontramos una tarjeta con ese código en esta cafetería. Revisá el código o pedíselo en el mostrador.'}
+      render();
+    },function(){M.busy=false;M.err='No se pudo abrir la tarjeta. Probá de nuevo en un rato.';render()});
+  }catch(_){M.busy=false;M.err='Ese código no es válido.';render()}
+  render();
+}
+function autoMember(){var m=memGet();if(m&&m.cafe&&m.code&&!S.member.card&&DB)loadMember(m.cafe,m.code)}
+function viewSocio(){
+  var M=S.member,cafes=S.dir.slice();
+  if(S.cafe&&S.cafeId&&!cafes.some(function(c){return c.id===S.cafeId}))cafes.push(Object.assign({id:S.cafeId},S.cafe));
+  if(M.card&&M.cafeData)return viewSocioCard(M.cafeData,M.card);
+  return viewSocioForm(M,cafes);
+}
+function viewSocioCard(c,s){
+  {
+    var P=periodo(s),vg=vigencia(s),ult=(s.usos||[]).slice().sort().reverse()[0],v={desde:c.desde||'08:00',hasta:c.hasta||'12:00'};
+    return '<section class="ficha"><div class="stack"><span class="eyebrow">Mi tarjeta de socio</span>'+membCard(c,false,s)+LEGEND+'</div>'+
+      '<div class="card stack"><h2 style="overflow-wrap:anywhere">Hola, '+esc(String(s.nombre||'').split(' ')[0])+'</h2>'+
+      '<p class="muted">'+(usoHoy(s)?'Ya retiraste tu café de hoy. Te esperamos mañana.':vg.cls==='bad'?'Tu membresía terminó. Pasá por '+esc(c.nombre)+' para renovarla.':'Tu café de hoy te espera de '+esc(v.desde)+' a '+esc(v.hasta)+'.')+'</p>'+
+      '<ul class="list">'+[
+        ['Estado','<span class="pill '+vg.cls+'">'+esc(vg.txt)+'</span>'],
+        ['Plan','<span class="chip '+s.plan+'"><i></i>'+PLAN[s.plan].nombre+' · '+PLAN[s.plan].prod+'</span>'],
+        ['Cafés retirados','<b class="num">'+P.used+'</b> de '+DUR],
+        ['Días que te quedan','<b class="num">'+P.rest+'</b>'],
+        ['Último café',ult?fmtD(ult):'Todavía ninguno'],
+        ['Dónde',esc([c.direccion,c.ciudad].filter(Boolean).join(' · ')||c.nombre)]
+      ].map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+r[1]+'</span></li>'}).join('')+'</ul>'+
+      '<div class="inline">'+(DL?'<button class="btn" data-mpng>Guardar como imagen</button>':'')+'<button class="btn" data-mclear>Cerrar sesión</button></div>'+
+      '<p class="help">La tarjeta se actualiza sola cada vez que la cafetería registra tu café.</p></div></section>';
+  }
+}
+function viewSocioForm(M,cafes){
+  return '<section class="form-wrap"><form id="f-soc" class="stack" novalidate>'+
+    '<div class="sec-h"><span class="eyebrow">Soy socio</span><h1 style="font-size:clamp(28px,4vw,40px)">Mirá tu tarjeta vigente</h1>'+
+    '<p class="muted">Elegí tu cafetería y escribí el código de socio que te dieron en el mostrador.</p></div>'+
+    (DB?'':'<div class="note">Para ver tu tarjeta necesitás abrir Socio Café con la cuenta a la que la cafetería te compartió la página.</div>')+
+    '<div class="field"><label class="lbl" for="m-cafe">Cafetería</label><select class="inp xl" id="m-cafe">'+
+      (cafes.length?cafes.map(function(c){return '<option value="'+esc(c.id)+'"'+(c.id===M.cafe?' selected':'')+'>'+esc(c.nombre)+(c.ciudad?' · '+esc(c.ciudad):'')+'</option>'}).join(''):'<option value="">Todavía no hay cafeterías</option>')+'</select></div>'+
+    '<div class="field"><label class="lbl" for="m-code">Código de socio</label><input class="inp xl mono" id="m-code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="Ej. K7P2QX" value="'+esc(M.code)+'" style="letter-spacing:.2em;text-transform:uppercase"><span class="help">Son 6 letras y números. Figura en la tarjeta que te mostraron al asociarte.</span></div>'+
+    '<p class="ferr">'+esc(M.err)+'</p>'+
+    '<div><button class="btn primary lg" type="submit" '+(M.busy||!cafes.length?'disabled':'')+'>'+(M.busy?'Buscando…':'Ver mi tarjeta')+'</button></div>'+
+  '</form><aside class="preview-side"><span class="eyebrow">Así se ve</span>'+membCard({nombre:'Tu cafetería',ciudad:'',desde:'08:00',hasta:'12:00'},true)+'</aside></section>';
+}
+
+/* ---------- tarjeta como imagen ---------- */
+function cardPNG(c,s){
+  var cs=getComputedStyle(document.documentElement),tok=function(n){return cs.getPropertyValue(n).trim()};
+  var acc=tok('--accent'),on=tok('--on-accent'),cr=tok('--crema'),bad=tok('--bad');
+  var W=900,H=560,cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;var x=cv.getContext('2d');x.scale(2,2);
+  function rr(a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+  var P=periodo(s),vg=vigencia(s);
+  var draw=function(img){
+    x.fillStyle=acc;rr(0,0,W,H,36);x.fill();
+    x.save();x.beginPath();x.arc(84,84,44,0,Math.PI*2);x.clip();
+    if(img){x.drawImage(img,40,40,88,88)}else{x.fillStyle=on;x.globalAlpha=.12;x.fillRect(40,40,88,88);x.globalAlpha=1;x.fillStyle=on;x.font='700 38px "Bricolage Grotesque",sans-serif';x.textAlign='center';x.fillText(initials(c.nombre),84,98);x.textAlign='left'}
+    x.restore();
+    x.fillStyle=on;x.font='700 34px "Bricolage Grotesque",sans-serif';x.fillText(c.nombre||'',150,78);
+    x.globalAlpha=.75;x.font='400 20px "DM Sans",sans-serif';x.fillText(c.ciudad||'',150,108);
+    x.fillText('Socio '+PLAN[s.plan].nombre+' · '+PLAN[s.plan].prod.toLowerCase(),44,180);x.globalAlpha=1;
+    x.font='700 44px "Bricolage Grotesque",sans-serif';x.fillText(s.nombre||'',44,228);
+    var st=vg.cls==='bad'?'VENCIDA':vg.cls==='warn'?'POR VENCER':'VIGENTE';x.font='700 16px "DM Sans",sans-serif';var tw=x.measureText(st).width+28;
+    x.fillStyle=vg.cls==='bad'?bad:on;rr(W-44-tw,36,tw,32,16);x.fill();x.fillStyle=acc;x.fillText(st,W-44-tw+14,58);
+    var cols=30,gap=5,cw=(W-88-gap*(cols-1))/cols;
+    P.dias.forEach(function(d,i){var cx=44+(i%cols)*(cw+gap)+cw/2,cy=262+Math.floor(i/cols)*(cw+gap)+cw/2;x.beginPath();x.arc(cx,cy,cw/2-1,0,Math.PI*2);
+      if(d.u){x.fillStyle=on;x.fill()}else{x.strokeStyle=on;x.globalAlpha=.35;x.lineWidth=1.5;if(d.f)x.setLineDash([3,3]);x.stroke();x.setLineDash([]);x.globalAlpha=1}
+      if(d.t){x.beginPath();x.arc(cx,cy,cw/2+2,0,Math.PI*2);x.strokeStyle=cr;x.lineWidth=3;x.stroke()}});
+    x.fillStyle=on;x.globalAlpha=.85;x.font='500 19px "IBM Plex Mono",monospace';
+    x.fillText('Del '+fmtD(P.pago)+' al '+fmtD(P.fin),44,H-60);x.fillText(P.used+' de '+DUR+' cafés',44,H-32);
+    x.textAlign='right';x.fillText('Canje '+(c.desde||'08:00')+'–'+(c.hasta||'12:00'),W-44,H-60);if(s.codigo)x.fillText('Código '+s.codigo,W-44,H-32);x.textAlign='left';x.globalAlpha=1;
+    return new Promise(function(res,rej){cv.toBlob(function(b){b?res(b):rej()},'image/png')});
+  };
+  var ready=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+  return ready.then(function(){
+    if(!c.logo)return draw(null);
+    return new Promise(function(res){var im=new Image();im.onload=function(){res(draw(im))};im.onerror=function(){res(draw(null))};im.src=c.logo});
+  });
+}
+function savePNG(c,s){
+  if(!DL)return;
+  cardPNG(c,s).then(function(b){
+    var slug=String(s.nombre||'socio').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    return DL.save({filename:'tarjeta-'+(slug||'socio')+'.png',data:b});
+  }).then(function(){toast('Tarjeta guardada')},function(e){if(e&&e.code==='declined')return;toast('No se pudo guardar la imagen.',true)});
+}
+
+
+/* ---------- perfil (tienda) de cada cafetería ---------- */
+var unsubTi=null;
+function accRef(){var p={get:function(){return Promise.resolve({exists:false})},set:function(){return Promise.resolve()},delete:function(){return Promise.resolve()}};return p}
+function openTienda(id){
+  if(!id){S.view='tienda';S.tiendaId=null;S.accErr2='';render();window.scrollTo(0,0);return}
+  S.view='tienda';S.tiendaId=id;S.tienda=(id===S.cafeId&&S.cafe)?S.cafe:(S.dir.find(function(c){return c.id===id})||null);S.accErr='';
+  if(S.member.cafe!==id){if(unsubT){unsubT();unsubT=null}S.member={cafe:'',code:'',card:null,cafeData:null,err:'',busy:false}}
+  render();window.scrollTo(0,0);
+  if(!DB)return;
+  if(unsubTi){unsubTi();unsubTi=null}
+  unsubTi=DB.doc('cafes/'+ownerOf(id)).onSnapshot(function(sn){S.tienda=sn.exists?pickCafe(id,sn.data()):null;S.tiendaMiss=!S.tienda;if(S.member.cafe===id&&S.tienda)S.member.cafeData=S.tienda;if(S.view==='tienda')render()},function(){});
+  if(S.member.card)return;
+  var fallback=function(){var m=memGet();if(m&&m.cafe===id&&m.code)loadMember(id,m.code)};
+  if(S.uid&&S.mode==='db'){accRef(id).get().then(function(sn){if(sn.exists&&sn.data().code)loadMember(id,sn.data().code);else fallback()},fallback)}else fallback();
+}
+function crearCuentaSocio(code){
+  var id=S.tiendaId;S.accBusy=true;S.accErr='';render();
+  DB.doc(tPath(id,code)).get().then(function(sn){
+    if(!sn.exists){S.accBusy=false;S.accErr='No encontramos ese número de socio en '+((S.tienda&&S.tienda.nombre)||'esta cafetería')+'. Revisalo o pedilo en el mostrador.';render();return}
+    memPut({cafe:id,code:code});
+    var done=function(){S.accBusy=false;loadMember(id,code);toast('Listo, tu cuenta de socio quedó creada')};
+    if(S.uid)accRef(id).set({cafe:id,code:code,creado:hoyS()}).then(done,done);else done();
+  },function(){S.accBusy=false;S.accErr='No se pudo verificar el número. Probá de nuevo.';render()});
+}
+function salirSocio(){
+  var id=S.member.cafe||S.tiendaId;if(unsubT){unsubT();unsubT=null}
+  S.member={cafe:'',code:'',card:null,cafeData:null,err:'',busy:false};memPut(null);
+  if(S.uid&&DB)accRef(id).delete().catch(function(){});
+  render();
+}
+
+
+function cafeCard(){
+  return '<h3>Iniciá sesión en tu cafetería</h3>'+
+    '<form id="f-login2" class="stack" novalidate><div class="field"><label class="lbl" for="l-user">Usuario</label><input class="inp" id="l-user" autocomplete="username" autocapitalize="none"></div>'+
+    '<div class="field"><label class="lbl" for="l-pass">Contraseña</label><input class="inp" id="l-pass" type="password" autocomplete="current-password"></div>'+
+    '<p class="ferr">'+esc(S.loginErr||'')+'</p><div><button class="btn primary" type="submit" '+(S.loginBusy||!AUTH?'disabled':'')+'>'+(S.loginBusy?'Entrando…':'Iniciar sesión')+'</button></div></form>'+
+    '<div style="padding-top:6px;border-top:1px solid var(--line)"><p class="muted" style="font-size:14px;margin-bottom:8px">¿Todavía no tenés usuario o es otra cafetería?</p><button class="btn" data-newcafe>Crear cuenta nueva</button></div>';
+}
+function buscarSocio(code){
+  var M=S.member;M.err='';M.busy=true;render();
+  if(!DB){M.busy=false;M.err='La aplicación todavía no está configurada.';render();return}
+  DB.doc(tPath('',code)).get().then(function(sn){
+    M.busy=false;
+    if(!sn.exists){M.err='No encontramos ese número de socio. Revisalo o pedilo en el mostrador de tu cafetería.';render();return}
+    var cid=sn.data().cafeId;M.cafeData=(S.dirAll||[]).find(function(c){return c.id===cid})||null;loadMember(cid,code);
+  },function(){M.busy=false;M.err='No se pudo buscar. Revisá tu conexión y probá de nuevo.';render()});
+}
+function esSocio(){return !S.cafe&&!!(S.member.card||memGet())}
+function viewTiendaGeneral(){
+  var M=S.member,cafes=S.dir;
+  var socio=(M.card&&M.cafeData)
+    ?'<section class="sec"><div class="sec-h"><span class="eyebrow">Mi tarjeta</span><h2>Tu consumo en '+esc(M.cafeData.nombre)+'</h2></div>'+viewSocioCard(M.cafeData,M.card)+'</section>'
+    :'<section class="card acc"><div class="stack"><span class="eyebrow">Soy socio</span><h2>Mirá tu tarjeta de consumo</h2>'+
+      '<p class="muted">Escribí tu número de socio y vas a ver los cafés que tomaste, los días que te quedan y el vencimiento de tu membresía.</p></div>'+
+      '<form id="f-num" class="stack" novalidate><div class="field"><label class="lbl" for="n-code">Número de socio</label><input class="inp xl mono" id="n-code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="Ej. K7P2QX" value="'+esc(M.code||'')+'" style="letter-spacing:.2em;text-transform:uppercase"><span class="help">Son 6 letras y números. Te lo dan en el mostrador al asociarte.</span></div>'+
+      '<p class="ferr">'+esc(M.err||'')+'</p><div><button class="btn primary lg" type="submit" '+(M.busy?'disabled':'')+'>'+(M.busy?'Buscando…':'Ver mi tarjeta')+'</button></div></form></section>';
+  return '<div class="stack" style="gap:44px">'+
+    '<section class="store-h"><span class="logo" style="--s:96px;background:none;border:0">'+MARK.replace('width="34" height="34"','width="96" height="96"')+'</span><div style="min-width:0"><span class="eyebrow">Tienda</span><h1>Tienda Socio Café</h1>'+
+      '<div class="store-meta"><span>Membresías de café en tu cafetería de siempre</span><span>180 días · 1 café por día</span></div></div></section>'+
+    socio+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Beneficios de ser socio</span><h2>Tu café de todos los días, pagando solo una vez</h2></div><div class="perks">'+
+      '<div class="perk hi"><h3>Un café por día durante 180 días</h3><p>Pasás por tu cafetería, decís tu nombre y te llevás tu café sin pagar cada mañana.</p></div>'+
+      '<div class="perk"><h3>Pagás menos por cada café</h3><p>El abono sale menos que pagar cada café suelto.</p></div>'+
+      '<div class="perk"><h3>Precio fijo por seis meses</h3><p>Pagás una vez y tu café no aumenta hasta que termina tu membresía.</p></div>'+
+      '<div class="perk"><h3>Tu tarjeta en el celular</h3><p>Con tu número de socio ves tu consumo cuando quieras.</p></div>'+
+    '</div></section>'+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Cafeterías adheridas</span><h2>Dónde asociarte</h2></div>'+
+      (cafes.length?'<div class="dir">'+cafes.map(function(c){return '<button class="item" data-tienda="'+esc(c.id)+'">'+logoHTML(c,48)+'<div><b>'+esc(c.nombre)+'</b><span class="muted" style="font-size:13px">'+esc([c.direccion,c.ciudad].filter(Boolean).join(' · '))+'</span><span class="muted" style="font-size:13px;display:block;text-decoration:underline">Ver planes y precios</span></div></button>'}).join('')+'</div>':'<div class="empty">Todavía no hay cafeterías adheridas.</div>')+
+    '</section>'+
+    (esSocio()?'':'<section class="join"><div><h2>¿Tenés una cafetería?</h2><p class="muted" style="margin-top:6px">Creá la cuenta de tu cafetería o iniciá sesión para vender membresías y registrar el café de tus socios.</p></div><button class="btn primary lg" data-go="acceso">Crear cuenta o iniciar sesión</button></section>')+
+  '</div>';
+}
+function viewAcceso(){
+  return '<section class="stack" style="gap:22px;max-width:560px;margin:0 auto;width:100%"><div class="sec-h"><span class="eyebrow">Soy cafetería</span><h1 style="font-size:clamp(28px,4vw,40px)">Cuenta de tu cafetería</h1></div>'+
+    '<div class="card stack">'+cafeCard()+'</div><div><button class="link" data-go="tienda">← Volver a la tienda</button></div></section>';
+}
+function viewTienda(){
+  if(!S.tiendaId)return viewTiendaGeneral();
+  var c=S.tienda,id=S.tiendaId,M=S.member;
+  if(!c)return '<section class="empty">'+(S.tiendaMiss?'Esta cafetería no existe o ya no usa Socio Café.':'Abriendo la tienda…')+'</section>';
+  var pc=Number(c.precioClasica)||0,pp=Number(c.precioPremium)||0,sc=Number(c.precioCafe)||0,sl=Number(c.precioLeche)||0;
+  var plan=function(k,precio,suelto){
+    var dia=precio?Math.round(precio/DUR):0,ah=suelto&&precio?suelto*DUR-precio:0;
+    return '<div class="card plan '+k+'"><span class="chip '+k+'"><i></i>'+PLAN[k].nombre+'</span><h3>'+PLAN[k].prod+' todos los días</h3>'+
+      (precio?'<div><div class="pricebig num">'+money(precio)+'</div><span class="muted" style="font-size:14px">por 180 días · te sale <b class="num" style="color:var(--ink)">'+money(dia)+'</b> por café</span></div>':'<p class="muted">Consultá el precio en el mostrador.</p>')+
+      (ah>0?'<span class="pill ok">Ahorrás '+money(ah)+' frente a pagar cada café ('+money(suelto)+')</span>':'')+'</div>';
+  };
+  var account;
+  if(M.card&&M.cafe===id&&M.cafeData){account='<section class="sec"><div class="sec-h"><span class="eyebrow">Tu cuenta de socio</span><h2>Tu tarjeta de consumo</h2></div>'+viewSocioCard(M.cafeData,M.card)+'</section>'}
+  else{
+    account='<section class="card acc" id="cuenta-socio"><div class="stack"><span class="eyebrow">¿Querés ser socio?</span><h2>Acercate a '+esc(c.nombre)+'</h2>'+
+      '<p class="muted">La membresía se contrata en el mostrador de la cafetería. Elegís tu plan, pagás los 180 días y te dan tu número de socio para ver tu tarjeta de consumo en esta página.</p></div>'+
+      '<ul class="list">'+[
+        ['Dirección',esc([c.direccion,c.ciudad].filter(Boolean).join(' · ')||'Consultá en la cafetería')],
+        ['Horario del café de socios',esc((c.desde||'08:00')+' a '+(c.hasta||'12:00'))],
+        ['Teléfono',c.telefono?'<span class="mono">'+esc(c.telefono)+'</span>':'—']
+      ].map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+r[1]+'</span></li>'}).join('')+'</ul></section>';
+  }
+  return '<div class="stack" style="gap:44px">'+
+    (false?'<div class="note">Así ven tu tienda tus clientes. Para compartirla, agregá <b class="mono">#'+esc(id)+'</b> al final del enlace de Socio Café. <button class="link" data-go="panel">Volver a mi panel</button></div>':'')+
+    '<section class="store-h">'+logoHTML(c,96)+'<div style="min-width:0"><span class="eyebrow">Membresía de café</span><h1 style="overflow-wrap:anywhere">'+esc(c.nombre)+'</h1>'+
+      '<div class="store-meta">'+(c.direccion||c.ciudad?'<span>'+esc([c.direccion,c.ciudad].filter(Boolean).join(' · '))+'</span>':'')+'<span>Café del día de '+esc(c.desde||'08:00')+' a '+esc(c.hasta||'12:00')+'</span>'+(c.telefono?'<span class="mono">'+esc(c.telefono)+'</span>':'')+'</div></div></section>'+
+    account+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Beneficios de ser socio</span><h2>Tu café de todos los días, pagando solo una vez</h2></div><div class="perks">'+
+      '<div class="perk hi"><h3>Un café por día durante 180 días</h3><p>Pasás por '+esc(c.nombre)+', decís tu nombre y te llevás tu café. Sin sacar la billetera.</p></div>'+
+      '<div class="perk"><h3>Pagás menos por cada café</h3><p>'+(pc?'Con el plan Clásica cada café te sale '+money(Math.round(pc/DUR))+'.':'El abono sale menos que pagar cada café por separado.')+'</p></div>'+
+      '<div class="perk"><h3>Precio fijo por seis meses</h3><p>Pagás hoy y tu café no aumenta hasta que termina tu membresía.</p></div>'+
+      '<div class="perk"><h3>Tu tarjeta en el celular</h3><p>Con tu cuenta de socio ves cuántos cafés tomaste y cuántos días te quedan.</p></div>'+
+    '</div></section>'+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Planes</span><h2>Elegí tu abono</h2></div><div class="plans">'+plan('clasica',pc,sc)+plan('premium',pp,sl)+'</div></section>'+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Cómo asociarte</span><h2>Tres pasos</h2></div><ol class="steps">'+
+      '<li><h3>Pasá por el mostrador</h3><p class="muted">Elegí Clásica o Premium y pagá los 180 días.</p></li>'+
+      '<li><h3>Recibí tu número de socio</h3><p class="muted">Son 6 letras y números, únicos para vos.</p></li>'+
+      '<li><h3>Mirá tu tarjeta</h3><p class="muted">En la tienda, escribí tu número de socio y vas a ver tu consumo.</p></li></ol></section>'+
+    '<div><button class="link" data-go="tienda">← Volver a la Tienda Socio Café</button></div>'+
+  '</div>';
+}
+
+/* ---------- reglas de membresía ---------- */
+function vigencia(s){
+  var h=hoyS();
+  var v=s.pago?addDays(s.pago,DUR):s.vence;
+  if(!v) return {cls:'bad',txt:'Sin fecha'};
+  var ult=addDays(v,-1);
+  if(ult<h) return {cls:'bad',txt:'Vencida el '+fmtD(ult)};
+  if(ult<=addDays(h,10)) return {cls:'warn',txt:'Último día '+fmtD(ult)};
+  return {cls:'ok',txt:'Vigente hasta '+fmtD(ult)};
+}
+function ventana(){
+  var c=S.cafe||{},d=new Date(),now=pad(d.getHours())+':'+pad(d.getMinutes());
+  var desde=c.desde||'08:00',hasta=c.hasta||'12:00';
+  return {open:now>=desde&&now<hasta,desde:desde,hasta:hasta};
+}
+function usoHoy(s){return (s.usos||[]).indexOf(hoyS())>=0}
+
+/* ---------- vistas ---------- */
+function header(){
+  var right='';
+  if(S.view==='tienda'){
+    right=S.tiendaId?'<button class="btn sm" data-go="tienda">Volver a la tienda</button>':(esSocio()?'':'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>');
+  } else if(S.cafe){
+    right=(S.view!=='home'?'<button class="btn sm" data-go="home">Información del servicio</button>':'')+
+      (S.view!=='panel'?'<button class="btn sm primary" data-go="panel">'+logoHTML(S.cafe,22)+' Mi panel</button>':'')+
+      '<button class="btn sm danger" data-logout>Cerrar sesión</button>';
+  } else {
+    right=(S.view==='tienda'&&!S.tiendaId)?'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>':'<button class="btn sm" data-go="tienda">Volver a la tienda</button>';
+  }
+  $('#top').innerHTML='<button class="brand" data-go="home" aria-label="Socio Café, inicio">'+MARK+'<b>Socio Café</b></button><div class="top-r"><div class="theme" role="group" aria-label="Color de fondo"><button data-th="light" aria-pressed="'+(curTheme()==='light')+'"><i></i>Blanco</button><button data-th="dark" aria-pressed="'+(curTheme()==='dark')+'"><i></i>Negro</button></div>'+right+'</div>';
+}
+
+function periodo(s){
+  var pago=s.pago||hoyS(),h=hoyS(),u=s.usos||[],dias=[],used=0;
+  for(var i=0;i<DUR;i++){var d=addDays(pago,i),k=u.indexOf(d)>=0;if(k)used++;dias.push({d:d,u:k,f:d>h,t:d===h})}
+  var fin=addDays(pago,DUR-1),rest=h>fin?0:h<pago?DUR:Math.round((new Date(fin+'T12:00')-new Date(h+'T12:00'))/864e5)+1;
+  return {pago:pago,fin:fin,dias:dias,used:used,rest:rest};
+}
+function membCard(c,example,s){
+  var cups='',head,meta,st='';
+  if(s){
+    var P=periodo(s),vg=vigencia(s);
+    P.dias.forEach(function(x,i){cups+='<span class="'+(x.u?'u':x.f?'f':'')+(x.t?' t':'')+'" style="--i:'+i+'" title="'+fmtD(x.d)+(x.u?' · café entregado':x.f?' · por venir':' · sin canjear')+'"></span>'});
+    st='<span class="st '+(vg.cls==='bad'?'bad':'')+'">'+(vg.cls==='bad'?'Vencida':vg.cls==='warn'?'Por vencer':'Vigente')+'</span>';
+    head='<div><div class="cs">Socio '+PLAN[s.plan].nombre+' · '+PLAN[s.plan].prod.toLowerCase()+'</div><div class="socio" style="overflow-wrap:anywhere">'+esc(s.nombre)+'</div>'+(s.telefono?'<div class="tel">'+esc(s.telefono)+'</div>':'')+'</div>';
+    meta='<span>Del '+fmtD(P.pago).slice(0,5)+' al '+fmtD(P.fin).slice(0,5)+'</span><span>'+P.used+' de '+DUR+' cafés</span><span>Canje '+esc(c.desde||'08:00')+'–'+esc(c.hasta||'12:00')+'</span>';
+    return '<div class="memb" aria-label="Tarjeta de '+esc(s.nombre)+'">'+st+
+      '<div class="row1">'+logoHTML(c,52)+'<div><div class="cn">'+esc(c.nombre)+'</div><div class="cs">'+esc(c.ciudad||'')+'</div></div></div>'+head+
+      '<div class="cups long" aria-label="'+P.used+' cafés entregados de '+DUR+'">'+cups+'</div><div class="meta">'+meta+'</div></div>';
+  }
+  var used=[0,1,2,4,5,6,8,9,11,12,13];
+  for(var i=0;i<20;i++)cups+='<span class="'+(used.indexOf(i)>=0?'u':'')+'" style="--i:'+i+'"></span>';
+  return '<div class="memb" aria-label="Tarjeta de socio de ejemplo">'+(example?'<span class="tag-ej">Ejemplo</span>':'')+
+    '<div class="row1">'+logoHTML(c,52)+'<div><div class="cn">'+esc(c.nombre)+'</div><div class="cs">'+esc(c.ciudad||'Tu ciudad')+'</div></div></div>'+
+    '<div><div class="cs">Socio Premium · café con leche</div><div class="socio">Lucía Fernández</div></div>'+
+    '<div class="cups" aria-label="11 cafés usados este mes">'+cups+'</div>'+
+    '<div class="meta"><span>Canje '+esc(c.desde||'08:00')+'–'+esc(c.hasta||'12:00')+'</span><span>Vence 31/10</span><span>1 café por día</span></div></div>';
+}
+function fichaSocio(sel,v){
+  var vg=vigencia(sel),usado=usoHoy(sel),ok=vg.cls!=='bad'&&!usado&&v.open,P=periodo(sel);
+  var why=vg.cls==='bad'?'La membresía no está vigente.':usado?'':!v.open?'Fuera del horario de canje ('+v.desde+'–'+v.hasta+').':'';
+  var precio=Number(S.cafe[sel.plan==='premium'?'precioPremium':'precioClasica'])||0;
+  var ult=(sel.usos||[]).slice().sort().reverse().slice(0,5);
+  return '<div class="ficha"><div class="stack">'+membCard(S.cafe,false,sel)+
+    '<div class="legend"><span><i class="u"></i>Café entregado</span><span><i class="n"></i>Sin canjear</span><span><i class="f"></i>Por venir</span><span><i class="t"></i>Hoy</span></div></div>'+
+    '<div class="card stack">'+
+      (usado?'<div class="done">✓ Café de hoy entregado</div>':'<button class="btn primary lg" data-act="canje" '+(ok?'':'disabled')+'>Registrar '+PLAN[sel.plan].prod.toLowerCase()+' de hoy</button>')+
+      (why?'<p class="muted">'+esc(why)+'</p>':'')+
+      '<ul class="list">'+[
+        ['Estado','<span class="pill '+vg.cls+'">'+esc(vg.txt)+'</span>'],
+        ['Plan','<span class="chip '+sel.plan+'"><i></i>'+PLAN[sel.plan].nombre+' · '+PLAN[sel.plan].prod+'</span>'],
+        ['Teléfono',esc(sel.telefono||'—')],
+        ['Número de socio','<b class="mono" style="letter-spacing:.12em">'+esc(sel.codigo||'—')+'</b>'],
+        ['Pagó el',fmtD(sel.pago)+(precio?' · '+money(precio):'')],
+        ['Cafés entregados','<b class="num">'+P.used+'</b> de '+DUR],
+        ['Días que le quedan','<b class="num">'+P.rest+'</b>'],
+        ['Últimos canjes',ult.length?ult.map(function(d){return fmtD(d).slice(0,5)}).join(' · '):'Todavía ninguno']
+      ].map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+r[1]+'</span></li>'}).join('')+'</ul>'+
+      (sel.codigo?'<p class="help">Para ver su tarjeta, el socio entra a la tienda de '+esc(S.cafe.nombre)+', crea su cuenta de socio y escribe el número <b class="mono">'+esc(sel.codigo)+'</b>.</p>':'')+
+      '<div class="inline">'+(DL?'<button class="btn" data-png="'+sel.id+'">Descargar tarjeta (imagen)</button>':'')+(vg.cls!=='ok'?'<button class="btn" data-act="renovar">Renovar 180 días desde hoy</button>':'')+'<button class="link" data-close>Cerrar tarjeta</button></div>'+
+    '</div></div>';
+}
+
+function viewHome(){
+  var ex=S.cafe||{nombre:'Café La Esquina',ciudad:'Rosario',desde:'08:00',hasta:'12:00'};
+  var dir=S.dir.length
+    ?'<div class="dir">'+S.dir.map(function(c){return '<button class="item" data-tienda="'+esc(c.id)+'">'+logoHTML(c,48)+'<div><b>'+esc(c.nombre)+'</b><span class="muted" style="font-size:13px">'+esc([c.direccion,c.ciudad].filter(Boolean).join(' · '))+'</span><span class="muted" style="font-size:13px;display:block;text-decoration:underline">Ver tienda y membresías</span></div></button>'}).join('')+'</div>'
+    :'<div class="empty">Todavía no hay cafeterías en el listado. Cuando una cafetería crea su cuenta y elige aparecer, su logo se muestra acá.</div>';
+  var p1=S.cafe&&S.cafe.precioClasica,p2=S.cafe&&S.cafe.precioPremium;
+  return '<section class="hero">'+
+    '<div class="hero-copy"><span class="eyebrow">Membresías para cafeterías</span>'+
+      '<h1>Tu cliente paga seis meses. <em>Vos servís el café de cada día.</em></h1>'+
+      '<p class="lead">Socio Café es el sistema para vender abonos de café por 180 días en tu local. Cargás a tus socios, ellos pasan por el mostrador y en un toque marcás su café del día, dentro del horario que vos fijás.</p>'+
+      '<div class="cta">'+(S.cafe?'<button class="btn primary lg" data-go="panel">Abrir mi mostrador</button>':'<button class="btn primary lg" data-go="tienda">Entrar a la tienda</button>')+'<a class="btn lg" href="#beneficios">Ver beneficios</a></div>'+
+      '<div class="facts"><span><b>1 café</b>por socio y por día</span><span><b>2 planes</b>Clásica y Premium</span><span><b>Tu logo</b>en cada tarjeta</span></div>'+
+    '</div>'+membCard(ex,!S.cafe)+'</section>'+
+
+    '<section class="sec" id="como"><div class="sec-h"><span class="eyebrow">Cómo funciona</span><h2>De la alta al primer café, en una mañana</h2></div>'+
+    '<ol class="steps">'+
+      '<li><h3>Creá la cuenta de tu cafetería</h3><p class="muted">Nombre, dirección, el logo de tu tienda, el horario de canje y el precio de cada plan.</p></li>'+
+      '<li><h3>Sumá a tus socios</h3><p class="muted">Cada socio elige Clásica o Premium y paga 180 días por adelantado. La membresía vence sola al terminar el plazo, y cada socio recibe un código para ver su tarjeta en tu tienda.</p></li>'+
+      '<li><h3>Marcá el café en el mostrador</h3><p class="muted">Buscás al socio por nombre o teléfono y registrás el café de hoy. El sistema no deja canjear dos veces el mismo día ni fuera de horario.</p></li>'+
+    '</ol></section>'+
+
+
+    '<section class="sec" id="beneficios"><div class="sec-h"><span class="eyebrow">Beneficios para tu cafetería</span><h2>El café trae al cliente. Lo que lo acompaña, suma a tu caja.</h2></div>'+
+    '<div class="benef">'+
+      '<div class="b star"><h3>Más venta de lo que acompaña al café</h3><p>El socio ya tiene el café pago, así que cada mañana entra con ganas de sumar algo. Ofrecele lo que va bien con su taza y vendés más sin conseguir clientes nuevos.</p><div class="extras"><span>Medialunas</span><span>Tostado de jamón y queso</span><span>Budín o porción de torta</span><span>Alfajor</span><span>Tostadas con mermelada</span><span>Jugo de naranja exprimido</span></div></div>'+
+      '<div class="b"><h3>Cobrás 180 días por adelantado</h3><p>Entra plata a la caja el día que se asocia, no a lo largo del semestre.</p></div>'+
+      '<div class="b"><h3>Clientes que vuelven todos los días</h3><p>Una membresía convierte una visita suelta en un hábito. El socio elige tu local antes que el de la esquina.</p></div>'+
+      '<div class="b"><h3>Mañanas más previsibles</h3><p>Sabés cuántos socios tenés y cuántos cafés salen por día, y comprás insumos sin adivinar.</p></div>'+
+      '<div class="b"><h3>Tu marca en el celular del cliente</h3><p>La tarjeta lleva tu logo y el socio la mira cada vez que viene. Se acuerda de vos.</p></div>'+
+      '<div class="b"><h3>Sin abusos ni tarjetas de papel</h3><p>Un café por día y solo en el horario que fijás. Nada para imprimir ni sellar.</p></div>'+
+    '</div>'+
+    '<div class="card est"><div class="stack"><h3>¿Cuánto más podés vender?</h3><p class="muted" style="font-size:14px">Calculá cuánto suman los productos que acompañan al café. Los valores iniciales son un ejemplo: cambialos por los de tu local.</p>'+
+      '<div class="fgrid"><div class="field"><label class="lbl" for="b-n">Socios</label><input class="inp num" id="b-n" type="number" min="0" inputmode="numeric" value="'+esc(S.est.n)+'"></div>'+
+      '<div class="field"><label class="lbl" for="b-p">% que suma algo</label><input class="inp num" id="b-p" type="number" min="0" max="100" inputmode="numeric" value="'+esc(S.est.p)+'"></div>'+
+      '<div class="field"><label class="lbl" for="b-t">Precio del extra ($)</label><input class="inp num" id="b-t" type="number" min="0" step="100" inputmode="numeric" value="'+esc(S.est.t)+'"></div></div></div>'+
+      '<div class="est-out" id="b-out">'+estOut()+'</div></div>'+
+    '</section>'+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Planes que ofrece cada cafetería</span><h2>Dos abonos, con el precio que vos decidas</h2></div>'+
+    '<div class="plans">'+
+      '<div class="card plan clasica"><span class="chip clasica"><i></i>Clásica</span><h3>Café solo todos los días</h3><ul><li>Un café solo por día, en el horario de canje</li><li>180 días desde el pago</li><li>Precio sugerido por la cafetería'+(p1?': <b class="num" style="color:var(--ink)">'+money(p1)+'</b>':'')+'</li></ul></div>'+
+      '<div class="card plan premium"><span class="chip premium"><i></i>Premium</span><h3>Café con leche todos los días</h3><ul><li>Un café con leche por día, en el horario de canje</li><li>30 días desde el pago</li><li>Precio sugerido por la cafetería'+(p2?': <b class="num" style="color:var(--ink)">'+money(p2)+'</b>':'')+'</li></ul></div>'+
+    '</div></section>'+
+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Cafeterías adheridas</span><h2>Ya trabajan con Socio Café</h2></div>'+dir+'</section>'+
+
+    (S.cafe?'':'<section class="join"><div><h2>¿Tenés una cafetería?</h2><p class="muted" style="margin-top:6px">Creá tu cuenta gratis y empezá a vender membresías hoy.</p></div><button class="btn primary lg" data-go="tienda">Entrar a la tienda</button></section>');
+}
+
+function viewRegistro(){
+  var editing=!!S.cafe&&!S.newCafe;
+  var d=S.draft||(S.draft=Object.assign({nombre:'',ciudad:'',direccion:'',telefono:'',logo:'',desde:'08:00',hasta:'12:00',precioClasica:'',precioPremium:'',publico:true},editing?S.cafe:{}));
+  var modeNote=false
+    ?'<div class="note">La cuenta se va a guardar en este navegador. Para usarla desde otros dispositivos, el dueño de esta página tiene que compartirla con tu email como Editor.</div>'
+    :(S.canWrite===false?'<div class="note">Tu acceso a esta página es de solo lectura. Pedile al dueño que te comparta la página como Editor para crear la cuenta.</div>':'');
+  return '<section class="form-wrap"><form id="f-reg" class="stack" novalidate>'+
+    '<div class="sec-h"><span class="eyebrow">'+(editing?'Datos de la cafetería':'Cuenta nueva')+'</span><h1 style="font-size:clamp(28px,4vw,40px)">'+(editing?'Editar mi cafetería':'Creá la cuenta de tu cafetería')+'</h1>'+
+    '<p class="muted">Estos datos aparecen en tu mostrador y en la tarjeta de cada socio.</p></div>'+modeNote+
+    '<div class="field"><span class="lbl">Logo de la tienda</span><div class="logo-pick">'+logoHTML(d,84)+
+      '<div class="stack" style="gap:6px"><label class="btn" for="r-logo">'+(d.logo?'Cambiar logo':'Subir logo')+'</label><input id="r-logo" type="file" accept="image/*" hidden>'+
+      (d.logo?'<button type="button" class="link" id="r-logo-x">Quitar logo</button>':'')+'<span class="help">PNG o JPG. Se recorta en círculo.</span></div></div></div>'+
+    '<div class="fgrid">'+
+      '<div class="field full"><label class="lbl" for="r-nombre">Nombre de la cafetería</label><input class="inp" id="r-nombre" data-k="nombre" value="'+esc(d.nombre)+'" autocomplete="organization" required></div>'+
+      '<div class="field"><label class="lbl" for="r-dir">Dirección</label><input class="inp" id="r-dir" data-k="direccion" value="'+esc(d.direccion)+'"></div>'+
+      '<div class="field"><label class="lbl" for="r-ciudad">Ciudad</label><input class="inp" id="r-ciudad" data-k="ciudad" value="'+esc(d.ciudad)+'"></div>'+
+      '<div class="field full"><label class="lbl" for="r-tel">Teléfono o WhatsApp</label><input class="inp" id="r-tel" data-k="telefono" value="'+esc(d.telefono)+'" inputmode="tel"></div>'+
+      '<div class="field"><label class="lbl" for="r-desde">Canje desde</label><input class="inp" id="r-desde" type="time" data-k="desde" value="'+esc(d.desde)+'"></div>'+
+      '<div class="field"><label class="lbl" for="r-hasta">Canje hasta</label><input class="inp" id="r-hasta" type="time" data-k="hasta" value="'+esc(d.hasta)+'"></div>'+
+      '<div class="field"><label class="lbl" for="r-pc">Precio Clásica ($ por 180 días)</label><input class="inp num" id="r-pc" type="number" min="0" step="100" inputmode="numeric" data-k="precioClasica" value="'+esc(d.precioClasica)+'"></div>'+
+      '<div class="field"><label class="lbl" for="r-pp">Precio Premium ($ por 180 días)</label><input class="inp num" id="r-pp" type="number" min="0" step="100" inputmode="numeric" data-k="precioPremium" value="'+esc(d.precioPremium)+'"></div>'+
+      '<div class="field"><label class="lbl" for="r-sc">Café solo suelto ($)</label><input class="inp num" id="r-sc" type="number" min="0" step="100" inputmode="numeric" data-k="precioCafe" value="'+esc(d.precioCafe||'')+'"><span class="help">Para mostrarle al cliente cuánto ahorra.</span></div>'+
+      '<div class="field"><label class="lbl" for="r-sl">Café con leche suelto ($)</label><input class="inp num" id="r-sl" type="number" min="0" step="100" inputmode="numeric" data-k="precioLeche" value="'+esc(d.precioLeche||'')+'"></div>'+
+      (editing?'':'<div class="full" style="padding-top:14px;border-top:1px solid var(--line)"><h3>Usuario y contraseña</h3><p class="muted" style="font-size:14px">Los vas a usar para iniciar sesión en tu cafetería.</p></div>'+
+      '<div class="field full"><label class="lbl" for="r-user">Usuario</label><input class="inp" id="r-user" autocomplete="username" autocapitalize="none" data-k="usuario" value="'+esc(d.usuario||'')+'"><span class="help">De 3 a 30 letras o números, sin espacios.</span></div>'+
+      '<div class="field"><label class="lbl" for="r-pass">Contraseña</label><input class="inp" id="r-pass" type="password" autocomplete="new-password"><span class="help">Al menos 6 caracteres.</span></div>'+
+      '<div class="field"><label class="lbl" for="r-pass2">Repetir contraseña</label><input class="inp" id="r-pass2" type="password" autocomplete="new-password"></div>')+
+    '</div><p class="ferr" id="r-err">'+esc(S.err)+'</p>'+
+    '<div class="cta"><button class="btn primary lg" type="submit" '+(S.busy?'disabled':'')+'>'+(editing?'Guardar cambios':'Crear cuenta')+'</button><button class="btn lg" type="button" data-cancelreg>Cancelar</button></div>'+
+  '</form><aside class="preview-side"><span class="eyebrow">Así la ven tus socios</span>'+membCard({nombre:d.nombre||'Tu cafetería',ciudad:d.ciudad,logo:d.logo,desde:d.desde,hasta:d.hasta},true)+'</aside></section>';
+}
+
+function viewPanel(){
+  var c=S.cafe,v=ventana();
+  var tabs=[['mostrador','Mostrador'],['socios','Socios'],['stats','Estadísticas'],['cuenta','Mi cuenta']];
+  var body=S.tab==='stats'?tabStats():S.tab==='soysocio'?tabSoySocio():S.tab==='socios'?tabSocios():S.tab==='cuenta'?tabCuenta():tabMostrador(v);
+  return '<section class="stack" style="gap:22px">'+
+    '<div class="panel-h"><div class="id">'+logoHTML(c,64)+'<div style="min-width:0"><span class="eyebrow">Mi cafetería</span><h1>'+esc(c.nombre)+'</h1></div></div>'+
+    '<div class="inline"><span class="pill '+(v.open?'ok':'bad')+'">Canje '+(v.open?'abierto':'cerrado')+' · '+esc(v.desde)+'–'+esc(v.hasta)+'</span><button class="btn sm danger" data-logout>Cerrar sesión</button></div></div>'+
+    
+    '<div class="tabs" role="tablist">'+tabs.map(function(t){return '<button class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div>'+
+    body+'</section>';
+}
+
+function tabMostrador(v){
+  var q=S.q.trim().toLowerCase(),res=[];
+  if(q)res=S.socios.filter(function(s){return (s.nombre||'').toLowerCase().indexOf(q)>=0||(s.telefono||'').indexOf(q)>=0}).slice(0,8);
+  var sel=S.sel&&S.socios.find(function(s){return s.id===S.sel});
+  var hoy=S.socios.filter(usoHoy);
+  if(sel&&!q) return fichaSocio(sel,v);
+  var ficha='';
+  return '<div class="split"><div class="stack">'+
+    '<div class="field"><label class="lbl" for="m-q">Buscar socio</label><input class="inp xl" id="m-q" placeholder="Nombre o teléfono" value="'+esc(S.q)+'" autocomplete="off"></div>'+
+    (q?(res.length?res.map(function(s){var vg=vigencia(s);return '<button class="result" data-pick="'+s.id+'"><b>'+esc(s.nombre)+'</b><span class="pill '+vg.cls+'">'+(usoHoy(s)?'Ya tomó hoy':vg.cls==='bad'?'Vencida':'Habilitado')+'</span><small>'+PLAN[s.plan].nombre+' · '+esc(s.telefono||'sin teléfono')+'</small></button>'}).join(''):'<p class="muted">No hay socios con ese nombre. <button class="link" data-tab="socios">Agregar socio</button></p>'):'')+
+    (ficha||(!q?(S.socios.length?'<p class="muted">Escribí el nombre del socio para ver su tarjeta y registrar su café.</p><ul class="list">'+S.socios.slice().sort(function(a,b){return (a.nombre||'').localeCompare(b.nombre||'')}).slice(0,12).map(function(s){var vg=vigencia(s);return '<li><button class="link" style="font-size:15px;color:var(--ink);padding:0" data-pick="'+s.id+'">'+esc(s.nombre)+'</button><span class="pill '+vg.cls+'">'+(usoHoy(s)?'Ya tomó hoy':vg.cls==='bad'?'Vencida':'Habilitado')+'</span></li>'}).join('')+'</ul>':'<div class="empty">Todavía no tenés socios. <button class="link" data-tab="socios">Agregá el primero</button> y aparece acá para marcar su café.</div>'):''))+
+  '</div><aside class="card"><span class="eyebrow">Hoy</span><div class="big-n num">'+hoy.length+'</div><p class="muted">cafés entregados</p>'+
+    (hoy.length?'<ul class="list" style="margin-top:12px">'+hoy.map(function(s){return '<li><span>'+esc(s.nombre)+'</span><span class="chip '+s.plan+'"><i></i>'+PLAN[s.plan].nombre+'</span></li>'}).join('')+'</ul>':'')+'</aside></div>';
+}
+
+
+function tabSoySocio(){
+  var M=S.member,c=S.cafe,f=M.lcode&&S.socios.find(function(z){return z.codigo===M.lcode});
+  if(f){
+    var html=viewSocioCard(c,f);
+    return html;
+  }
+  return '<section class="form-wrap"><form id="f-soc2" class="stack" novalidate>'+
+    '<div class="sec-h"><span class="eyebrow">Soy socio de '+esc(c.nombre)+'</span><h2>Mirá tu tarjeta vigente</h2>'+
+    '<p class="muted">Escribí el código de socio que te dieron en el mostrador.</p></div>'+
+    '<div class="field"><label class="lbl" for="m-code2">Código de socio</label><input class="inp xl mono" id="m-code2" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="Ej. K7P2QX" value="'+esc(M.lcodeIn||'')+'" style="letter-spacing:.2em;text-transform:uppercase"><span class="help">Son 6 letras y números.</span></div>'+
+    '<p class="ferr">'+esc(M.lerr||'')+'</p><div><button class="btn primary lg" type="submit">Ver mi tarjeta</button></div>'+
+  '</form><aside class="preview-side"><span class="eyebrow">Así se ve</span>'+membCard(c,true)+'</aside></section>';
+}
+function tabSocios(){
+  var rows=S.socios.slice().sort(function(a,b){return (a.nombre||'').localeCompare(b.nombre||'')});
+  return '<div class="stack"><form id="f-socio" class="card stack" novalidate><h3>Nuevo socio</h3><div class="fgrid">'+
+    '<div class="field"><label class="lbl" for="s-n">Nombre y apellido</label><input class="inp" id="s-n" required></div>'+
+    '<div class="field"><label class="lbl" for="s-t">Teléfono</label><input class="inp" id="s-t" inputmode="tel"></div>'+
+    '<div class="field"><label class="lbl" for="s-p">Plan</label><select class="inp" id="s-p"><option value="clasica">Clásica · café solo'+(S.cafe.precioClasica?' · '+money(S.cafe.precioClasica):'')+'</option><option value="premium">Premium · café con leche'+(S.cafe.precioPremium?' · '+money(S.cafe.precioPremium):'')+'</option></select></div>'+
+    '<div class="field"><label class="lbl" for="s-d">Pagó el</label><input class="inp" id="s-d" type="date" value="'+hoyS()+'"></div>'+
+    '</div><p class="ferr" id="s-err"></p><div><button class="btn primary" type="submit">Agregar socio</button></div></form>'+
+    (rows.length?'<div class="scroll"><table class="tbl"><thead><tr><th>Socio</th><th>Plan</th><th>Estado</th><th>Cafés usados</th><th></th></tr></thead><tbody>'+
+      rows.map(function(s){var vg=vigencia(s);return '<tr><td><button class="link" style="font-size:15px;font-weight:700;color:var(--ink);padding:0" data-pick="'+s.id+'">'+esc(s.nombre)+'</button><br><span class="muted" style="font-size:13px">'+esc(s.telefono||'')+'</span></td><td><span class="chip '+s.plan+'"><i></i>'+PLAN[s.plan].nombre+'</span></td><td><span class="pill '+vg.cls+'">'+vg.txt+'</span></td><td class="num">'+periodo(s).used+' de '+DUR+'</td><td style="text-align:right;white-space:nowrap">'+
+        (S.confirmDel===s.id?'<button class="btn sm danger" data-del="'+s.id+'">Confirmar baja</button> <button class="link" data-nodel>No</button>':'<button class="btn sm" data-pick="'+s.id+'">Ver tarjeta</button> <button class="btn sm" data-ren="'+s.id+'">Renovar</button> <button class="link" data-askdel="'+s.id+'">Dar de baja</button>')+'</td></tr>'}).join('')+
+    '</tbody></table></div>':'<div class="empty">Los socios que agregues aparecen en esta lista, con su plan y el estado de su membresía.</div>')+'</div>';
+}
+
+function tabCuenta(){
+  var c=S.cafe;
+  return '<div class="split"><div class="card stack"><h3>Datos de la cafetería</h3><ul class="list">'+
+    [['Dirección',c.direccion],['Ciudad',c.ciudad],['Teléfono',c.telefono],['Horario de canje',(c.desde||'08:00')+' a '+(c.hasta||'12:00')],['Precio Clásica',c.precioClasica?money(c.precioClasica):'Sin cargar'],['Precio Premium',c.precioPremium?money(c.precioPremium):'Sin cargar'],['Café solo suelto',c.precioCafe?money(c.precioCafe):'Sin cargar'],['Café con leche suelto',c.precioLeche?money(c.precioLeche):'Sin cargar'],['Enlace de tu tienda','Enlace de Socio Café + #'+S.uid]]
+    .map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+esc(r[1]||'—')+'</span></li>'}).join('')+
+    '</ul><div><button class="btn primary" data-go="registro">Editar datos y logo</button></div>'+
+    '<div class="stack" style="margin-top:10px;padding-top:16px;border-top:1px solid var(--line)"><h3>Usuarios</h3><p class="muted" style="font-size:14px">Cada usuario entra a esta cafetería con su propia contraseña.</p>'+
+    '<ul class="list">'+credList(S.cafeId).map(function(x){return '<li><span class="mono">'+esc(x.u)+(x.u===S.user?' <span class="muted">(vos)</span>':'')+'</span>'+(credList(S.cafeId).length>1&&x.u!==S.user?'<button class="link" data-quitaru="'+esc(x.u)+'">Quitar</button>':'')+'</li>'}).join('')+'</ul></div>'+
+    '<form id="f-adduser" class="stack" novalidate><h3>Agregar usuario</h3>'+
+      '<div class="field"><label class="lbl" for="au-user">Usuario</label><input class="inp" id="au-user" autocomplete="off" autocapitalize="none"></div>'+
+      '<div class="field"><label class="lbl" for="au-1">Contraseña</label><input class="inp" id="au-1" type="password" autocomplete="new-password"></div>'+
+      '<div class="field"><label class="lbl" for="au-2">Repetir contraseña</label><input class="inp" id="au-2" type="password" autocomplete="new-password"></div>'+
+      '<div><button class="btn" type="submit">Agregar usuario</button></div><p class="ferr" id="au-err"></p></form>'+
+    '<form id="f-pass" class="stack" novalidate><h3>Cambiar contraseña</h3>'+
+      '<p class="muted" style="font-size:14px">Cambiá la contraseña de tu usuario <b class="mono" style="color:var(--ink)">'+esc(S.user)+'</b>.</p>'+
+      '<div class="field"><label class="lbl" for="pw-1">Contraseña nueva</label><input class="inp" id="pw-1" type="password" autocomplete="new-password"></div>'+
+      '<div class="field"><label class="lbl" for="pw-2">Repetir contraseña</label><input class="inp" id="pw-2" type="password" autocomplete="new-password"></div>'+
+      '<div><button class="btn" type="submit">Guardar contraseña</button></div><p class="ferr" id="pw-err"></p></form></div>'+
+    '<aside class="stack"><span class="eyebrow">Tarjeta de tus socios</span>'+membCard(c,true)+'</aside></div>';
+}
+
+function render(){
+  header();
+  if((S.view==='panel'||S.view==='home')&&!S.cafe&&S.cafeId){header();$('#view').innerHTML='<p class="muted" style="padding:40px 0;text-align:center">Cargando tu cafetería…</p>';return}
+  if(S.view==='home'&&!S.cafe){S.view='tienda';S.tiendaId=null}
+  if((S.view==='acceso'||S.view==='registro')&&!S.cafe&&esSocio()){S.view='tienda';S.tiendaId=null}
+  if(S.view==='panel'&&!S.cafe){S.view='tienda';S.tiendaId=null}
+  if(S.view==='registro'&&!S.cafe&&!S.newCafe&&S.mine.length){S.view='tienda';S.tiendaId=null}
+  if(S.mode==='sinconfig'){$('#view').innerHTML='<section class="card stack" style="max-width:640px;margin:40px auto"><span class="eyebrow">Configuración pendiente</span><h1 style="font-size:28px">Falta conectar la base de datos</h1><p class="muted">Abrí el archivo <b class="mono">config.js</b> y pegá los datos de tu proyecto de Firebase, como explica la guía <b class="mono">LEEME.html</b>.</p></section>';return}
+  var html=S.view==='acceso'?viewAcceso():S.view==='tienda'?viewTienda():S.view==='registro'?viewRegistro():S.view==='panel'?viewPanel():viewHome();
+  var act=document.activeElement,aid=act&&act.id,pos=act&&act.selectionStart;
+  $('#view').innerHTML=html;
+  if(aid){var el=document.getElementById(aid);if(el&&el!==document.body){el.focus();try{if(pos!=null)el.setSelectionRange(pos,pos)}catch(_){}}}
+}
+
+/* ---------- logo: recorte cuadrado y reducción ---------- */
+function readLogo(file){
+  return new Promise(function(res,rej){
+    if(!file||!/^image\//.test(file.type))return rej('Elegí un archivo de imagen.');
+    var fr=new FileReader();fr.onerror=function(){rej('No se pudo leer la imagen.')};
+    fr.onload=function(){var img=new Image();img.onerror=function(){rej('No se pudo abrir la imagen.')};img.onload=function(){
+      var n=Math.min(img.width,img.height),sz=240,cv=document.createElement('canvas');cv.width=cv.height=sz;
+      var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,sz,sz);
+      cx.drawImage(img,(img.width-n)/2,(img.height-n)/2,n,n,0,0,sz,sz);
+      var out=cv.toDataURL('image/webp',.85);if(out.indexOf('image/webp')<0)out=cv.toDataURL('image/jpeg',.85);res(out)};img.src=fr.result};
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click',function(e){
+  var mp=e.target.closest('[data-png],[data-mpng],[data-mclear]');if(mp){
+    if(S.view==='tienda'){if(mp.hasAttribute('data-mclear'))salirSocio();else if(mp.hasAttribute('data-mpng'))savePNG(S.member.cafeData,S.member.card);return}
+    if(mp.hasAttribute('data-mclear')&&S.view==='panel'){S.member.lcode=null;S.member.lcodeIn='';S.member.lerr='';render();return}
+    if(mp.hasAttribute('data-mpng')&&S.view==='panel'){var lf=S.socios.find(function(z){return z.codigo===S.member.lcode});if(lf)savePNG(S.cafe,lf);return}
+    if(mp.hasAttribute('data-mclear')){if(unsubT){unsubT();unsubT=null}S.member.card=null;S.member.err='';memPut(null);render();return}
+    if(mp.hasAttribute('data-mpng')){savePNG(S.member.cafeData,S.member.card);return}
+    var so=S.socios.find(function(z){return z.id===mp.dataset.png});if(so)savePNG(S.cafe,so);return}
+  if(e.target.closest('[data-logout]')){logout();return}
+  var qu=e.target.closest('[data-quitaru]');if(qu){quitarUsuario(S.cafeId,qu.dataset.quitaru);return}
+  var rb=e.target.closest('[data-rol]');if(rb){S.rol=rb.dataset.rol;render();return}
+  if(e.target.closest('[data-cancelreg]')){var wasNew=S.newCafe||!S.cafe;S.newCafe=false;S.draft=null;if(wasNew){S.view='acceso';render()}else{S.view='panel';render()}return}
+  if(e.target.closest('[data-newcafe]')){S.newCafe=true;S.draft=null;S.err='';S.view='registro';render();window.scrollTo(0,0);return}
+  var ti=e.target.closest('[data-tienda]');if(ti){openTienda(ti.dataset.tienda);return}
+  var th=e.target.closest('[data-th]');if(th){document.documentElement.setAttribute('data-theme',th.dataset.th);try{localStorage.setItem(THK,th.dataset.th)}catch(_){}header();return}
+  var t=e.target.closest('[data-go],[data-tab],[data-pick],[data-act],[data-ren],[data-askdel],[data-del],[data-nodel],[data-close],#r-logo-x');if(!t)return;
+  if(t.hasAttribute('data-close')){S.sel=null;render();return}
+  if(t.dataset.go==='socio'){S.view='socio';render();autoMember();window.scrollTo(0,0);return}
+  if(t.dataset.go==='tienda'){openTienda(null);return}
+  if(t.dataset.go==='acceso'){if(AUTH&&AUTH.currentUser){AUTH.signOut();S.cafe=null;S.cafeId=null;S.sel=null}S.loginErr='';S.view='acceso';render();window.scrollTo(0,0);return}
+  if(t.dataset.go){var g=t.dataset.go;if(g==='registro'){S.draft=null;S.err='';S.newCafe=false}if(g==='panel'&&!S.cafe)g='registro';S.view=g;render();window.scrollTo(0,0);return}
+  if(t.dataset.tab==='tienda'){S.socios.filter(function(z){return !z.codigo}).forEach(function(z){saveSocio(Object.assign({},z)).catch(function(){})});openTienda(S.cafeId);return}
+  if(t.dataset.tab==='soysocio'){S.socios.filter(function(z){return !z.codigo}).forEach(function(z){saveSocio(Object.assign({},z)).catch(function(){})})}
+  if(t.dataset.tab){S.view='panel';S.tab=t.dataset.tab;if(t.dataset.tab!=='mostrador')S.sel=null;render();return}
+  if(t.dataset.pick){var ps=S.socios.find(function(z){return z.id===t.dataset.pick});if(ps&&!ps.codigo)saveSocio(Object.assign({},ps)).catch(function(){});S.sel=t.dataset.pick;S.q='';S.view='panel';S.tab='mostrador';render();window.scrollTo(0,0);return}
+  if(t.id==='r-logo-x'){S.draft.logo='';render();return}
+  if(t.hasAttribute('data-nodel')){S.confirmDel=null;render();return}
+  if(t.dataset.askdel){S.confirmDel=t.dataset.askdel;render();return}
+  if(t.dataset.del){var id=t.dataset.del;S.confirmDel=null;delSocio(id).then(function(){toast('Socio dado de baja')},function(){toast('No se pudo dar de baja. Probá de nuevo.',true)});return}
+  var sid=t.dataset.ren||(t.dataset.act&&S.sel);var s=sid&&S.socios.find(function(x){return x.id===sid});if(!s)return;
+  if(t.dataset.act==='canje'){
+    if(usoHoy(s))return;var u=(s.usos||[]).filter(function(x){return x>=addDays(hoyS(),-400)});u.push(hoyS());
+    saveSocio(Object.assign({},s,{usos:u})).then(function(){toast('Café registrado para '+s.nombre)},function(){toast('No se pudo registrar el café. Probá de nuevo.',true)});
+  } else {
+    saveSocio(Object.assign({},s,{pago:hoyS(),vence:addDays(hoyS(),DUR)})).then(function(){toast('Membresía renovada hasta '+fmtD(addDays(hoyS(),DUR-1)))},function(){toast('No se pudo renovar. Probá de nuevo.',true)});
+  }
+});
+document.addEventListener('input',function(e){
+  if(/^b-[npt]$/.test(e.target.id)){S.est[e.target.id[2]]=e.target.value;var bo=$('#b-out');if(bo)bo.innerHTML=estOut();return}
+  if(e.target.id==='m-q'){S.q=e.target.value;S.sel=null;render();return}
+  if(e.target.dataset.k&&S.draft){S.draft[e.target.dataset.k]=e.target.value;var side=$('.preview-side');if(side)side.innerHTML='<span class="eyebrow">Así la ven tus socios</span>'+membCard({nombre:S.draft.nombre||'Tu cafetería',ciudad:S.draft.ciudad,logo:S.draft.logo,desde:S.draft.desde,hasta:S.draft.hasta},true)}
+});
+document.addEventListener('change',function(e){
+  if(e.target.id==='r-pub'&&S.draft){S.draft.publico=e.target.checked;return}
+  if(e.target.id==='r-logo'){var f=e.target.files&&e.target.files[0];readLogo(f).then(function(u){S.draft.logo=u;S.err='';render()},function(m){S.err=m;render()})}
+});
+document.addEventListener('submit',function(e){
+  e.preventDefault();
+  if(e.target.id==='f-login2'){login($('#l-user').value,$('#l-pass').value);return}
+  if(e.target.classList.contains('f-setup')){var sid=e.target.dataset.id,q=function(x){return e.target.querySelector('#'+CSS.escape(x+sid))};
+    setCreds(sid,q('su-').value,q('sp-').value,q('sp2-').value).then(function(){S.setupErr={};S.out=false;setActive(sid);S.view='panel';S.tab='mostrador';sesSave();render();window.scrollTo(0,0);toast('Listo. Ya podés entrar con tu usuario y contraseña.')},
+      function(m){S.setupErr={};S.setupErr[sid]=m;render()});return}
+  if(e.target.id==='f-adduser'){addUser(S.cafeId,$('#au-user').value,$('#au-1').value,$('#au-2').value).then(function(){render();toast('Usuario agregado')},function(m){$('#au-err').textContent=m});return}
+  if(e.target.id==='f-pass'){setCreds(S.cafeId,S.user,$('#pw-1').value,$('#pw-2').value).then(function(){render();toast('Contraseña guardada')},function(m){$('#pw-err').textContent=m});return}
+  if(e.target.id==='f-num'){var nc=$('#n-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');S.member.code=nc;if(nc.length!==6){S.member.err='El número de socio tiene 6 letras y números.';render();return}buscarSocio(nc);return}
+  if(e.target.id==='f-acc2'){var cf2=$('#a-cafe').value,ac2=$('#a-code2').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(!cf2){S.accErr2='Elegí tu cafetería.';render();return}
+    if(ac2.length!==6){S.accErr2='El número de socio tiene 6 letras y números.';render();return}
+    openTienda(cf2);crearCuentaSocio(ac2);return}
+  if(e.target.id==='f-acc'){var ac=$('#a-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(ac.length!==6){S.accErr='El número de socio tiene 6 letras y números.';render();return}crearCuentaSocio(ac);return}
+  if(e.target.id==='f-soc2'){var c2=$('#m-code2').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');S.member.lcodeIn=c2;
+    var hit=S.socios.find(function(z){return z.codigo===c2});
+    if(!hit){S.member.lerr=c2.length!==6?'El código tiene 6 letras y números.':'No encontramos un socio con ese código. Pedilo en el mostrador.';render();return}
+    S.member.lcode=c2;S.member.lerr='';render();return}
+  if(e.target.id==='f-soc'){var cf=$('#m-cafe').value,cd=$('#m-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(!cf){S.member.err='Elegí tu cafetería.';render();return}
+    if(cd.length!==6){S.member.code=cd;S.member.err='El código tiene 6 letras y números.';render();$('#m-code').focus();return}
+    loadMember(cf,cd);return}
+  if(e.target.id==='f-reg'){
+    var d=S.draft;if(!String(d.nombre||'').trim()){S.err='Escribí el nombre de la cafetería.';render();$('#r-nombre').focus();return}
+    if(d.desde>=d.hasta){S.err='El horario de canje tiene que terminar después de empezar.';render();return}
+    var c={nombre:d.nombre.trim(),ciudad:(d.ciudad||'').trim(),direccion:(d.direccion||'').trim(),telefono:(d.telefono||'').trim(),logo:d.logo||'',desde:d.desde,hasta:d.hasta,
+      precioClasica:Number(d.precioClasica)||0,precioPremium:Number(d.precioPremium)||0,precioCafe:Number(d.precioCafe)||0,precioLeche:Number(d.precioLeche)||0,publico:true,creado:(S.cafe&&S.cafe.creado)||hoyS()};
+    var nuevo=!S.cafe||S.newCafe;
+    if(nuevo){
+      var ru=($('#r-user')||{}).value,rp=($('#r-pass')||{}).value,rp2=($('#r-pass2')||{}).value,vm=validarUsuario(ru,rp,rp2);
+      if(vm){S.err=vm;render();return}
+      S.busy=true;S.err='';render();
+      var go=function(){return crearCafeteria(c,ru,rp)};
+      (AUTH.currentUser?AUTH.signOut().then(go):go()).then(function(cid){S.busy=false;S.newCafe=false;S.draft=null;setActive(cid);S.view='panel';S.tab='socios';render();window.scrollTo(0,0);toast('Cuenta creada. Ya podés cargar socios.')},
+        function(m){S.busy=false;S.err=typeof m==='string'?m:'No se pudo crear la cuenta. Probá de nuevo.';render()});
+      return;
+    }
+    S.busy=true;S.err='';render();
+    saveCafe(c,S.cafeId).then(function(){S.busy=false;S.draft=null;S.view='panel';render();window.scrollTo(0,0);toast('Cambios guardados')},
+      function(){S.busy=false;S.err='No se pudo guardar. Revisá tu conexión y probá de nuevo.';render()});
+    return;
+  }
+  if(e.target.id==='f-socio'){
+    var n=$('#s-n').value.trim();if(!n){$('#s-err').textContent='Escribí el nombre del socio.';$('#s-n').focus();return}
+    var pago=$('#s-d').value||hoyS();
+    var s={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),nombre:n,telefono:$('#s-t').value.trim(),plan:$('#s-p').value,pago:pago,vence:addDays(pago,DUR),usos:[]};
+    saveSocio(s).then(function(){toast(n+' ya es socio');S.sel=s.id;S.q='';S.tab='mostrador';render();window.scrollTo(0,0)},function(){$('#s-err').textContent='No se pudo guardar el socio. Probá de nuevo.'});
+  }
+});
+
+try{var _h=location.hash.slice(1);if(/^u_[A-Za-z0-9_-]+$/.test(_h)){S.view='tienda';S.tiendaId=_h}}catch(_){}
+render();boot();
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+</script>
+</body>
+</html>

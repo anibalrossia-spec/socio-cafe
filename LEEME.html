@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socio Café: cómo publicarla</title>
+<style>
+:root{--bg:#fff;--ink:#2A2730;--muted:#6B6575;--line:#E5E0EC;--soft:#F5F2F9;--accent:#CDB8E8;--hl:#FFE2CF;--warn:#FFF1CC}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,"Segoe UI",system-ui,sans-serif;padding:24px 16px 80px}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:32px;line-height:1.15;margin:0 0 8px}
+h2{font-size:22px;margin:40px 0 4px;padding-top:24px;border-top:1px solid var(--line)}
+.lead{color:var(--muted);margin:0 0 20px}
+.tag{display:inline-block;background:var(--accent);border-radius:999px;padding:2px 12px;font-size:13px;font-weight:700}
+ol{padding-left:22px}
+li{margin:8px 0}
+code,.k{font-family:Consolas,Menlo,monospace;background:var(--soft);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:14px}
+.note{background:var(--warn);border-radius:10px;padding:12px 16px;margin:14px 0}
+.ok{background:var(--hl);border-radius:10px;padding:12px 16px;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:15px}
+td{border-top:1px solid var(--line);padding:8px 6px;vertical-align:top}
+td:first-child{font-family:Consolas,Menlo,monospace;white-space:nowrap}
+</style>
+</head>
+<body><div class="wrap">
+<span class="tag">Guía paso a paso</span>
+<h1>Publicar Socio Café como aplicación</h1>
+<p class="lead">Al terminar vas a tener una dirección propia (por ejemplo <b>tuusuario.github.io/socio-cafe</b>) que se instala como aplicación en el celular y en la computadora. Los socios y las cafeterías la usan sin cuenta de Claude. Todo es gratis.</p>
+
+<h2>Qué hay en esta carpeta</h2>
+<table>
+<tr><td>index.html</td><td>La aplicación.</td></tr>
+<tr><td>config.js</td><td>Los datos de conexión a tu base de datos. Lo completás en el paso 1.</td></tr>
+<tr><td>manifest.webmanifest</td><td>Nombre, colores e ícono para instalarla.</td></tr>
+<tr><td>sw.js</td><td>Permite instalarla y que abra rápido.</td></tr>
+<tr><td>icons/</td><td>Los íconos de la taza.</td></tr>
+<tr><td>firestore.rules</td><td>Las reglas de seguridad de la base de datos. Las pegás en el paso 1.</td></tr>
+</table>
+
+<h2>Paso 1: crear la base de datos (Firebase)</h2>
+<ol>
+<li>Entrá a <b>console.firebase.google.com</b> con tu cuenta de Google y tocá <b>Crear un proyecto</b>. Nombre: <span class="k">socio-cafe</span>. Podés desactivar Google Analytics.</li>
+<li>En el menú de la izquierda: <b>Compilación → Authentication → Comenzar</b>. En <b>Método de acceso</b> elegí <b>Correo electrónico/contraseña</b>, activalo y guardá.</li>
+<li>Menú: <b>Compilación → Firestore Database → Crear base de datos</b>. Ubicación: <span class="k">southamerica-east1 (São Paulo)</span>. Elegí <b>modo de producción</b>.</li>
+<li>En Firestore, pestaña <b>Reglas</b>: borrá lo que hay, abrí el archivo <span class="k">firestore.rules</span> con el Bloc de notas, copiá todo, pegalo y tocá <b>Publicar</b>.</li>
+<li>Tocá el engranaje → <b>Configuración del proyecto</b>. Abajo, en <b>Tus apps</b>, tocá el ícono <b>&lt;/&gt;</b> (Web). Apodo: <span class="k">socio-cafe</span>. No marques Hosting. Tocá <b>Registrar app</b>.</li>
+<li>Firebase te muestra un bloque con <span class="k">apiKey</span>, <span class="k">authDomain</span>, <span class="k">projectId</span>, etc. Abrí <span class="k">config.js</span> con el Bloc de notas y reemplazá cada <span class="k">PEGAR_AQUI</span> por el valor correspondiente, entre comillas. Guardá.</li>
+</ol>
+<div class="note">Los datos de <b>config.js</b> no son secretos: Firebase los diseña para estar en la página. Lo que protege a tus socios son las reglas del punto 4.</div>
+
+<h2>Paso 2: subir la aplicación a GitHub</h2>
+<ol>
+<li>Entrá a <b>github.com</b> y creá una cuenta si no tenés. El nombre de usuario va a ser parte de la dirección.</li>
+<li>Arriba a la derecha: <b>+ → New repository</b>. Nombre: <span class="k">socio-cafe</span>. Marcá <b>Public</b>. Tocá <b>Create repository</b>.</li>
+<li>En la página del repositorio tocá <b>uploading an existing file</b>. Arrastrá <b>todos los archivos de esta carpeta y la carpeta icons</b> (podés dejar afuera este LEEME). Abajo tocá <b>Commit changes</b>.</li>
+<li>Andá a <b>Settings → Pages</b>. En <b>Source</b> elegí <b>Deploy from a branch</b>, rama <span class="k">main</span>, carpeta <span class="k">/ (root)</span>, y <b>Save</b>.</li>
+<li>Esperá uno o dos minutos y recargá esa página: arriba aparece la dirección, del tipo <span class="k">https://tuusuario.github.io/socio-cafe/</span>.</li>
+</ol>
+
+<h2>Paso 3: autorizar la dirección en Firebase</h2>
+<ol>
+<li>En Firebase: <b>Authentication → Configuración → Dominios autorizados → Agregar dominio</b>.</li>
+<li>Escribí <span class="k">tuusuario.github.io</span> (sin https ni /socio-cafe) y agregalo.</li>
+</ol>
+
+<h2>Paso 4: instalarla</h2>
+<ol>
+<li><b>Android (Chrome):</b> abrí la dirección → menú ⋮ → <b>Instalar aplicación</b>.</li>
+<li><b>iPhone (Safari):</b> abrí la dirección → botón Compartir → <b>Agregar a pantalla de inicio</b>.</li>
+<li><b>Computadora (Chrome o Edge):</b> abrí la dirección → ícono de instalar en la barra de direcciones (una pantalla con flecha) → <b>Instalar</b>.</li>
+</ol>
+
+<h2>Paso 5: primer uso</h2>
+<ol>
+<li>Tocá <b>Soy cafetería → Crear cuenta nueva</b> y cargá tu cafetería con su usuario y contraseña.</li>
+<li>En <b>Mi panel → Socios</b> cargá a tus socios. Cada uno recibe su número.</li>
+<li>El socio abre la aplicación, escribe su número en <b>Ver mi tarjeta</b> y ve su consumo.</li>
+<li>Para sumar empleados: <b>Mi panel → Mi cuenta → Agregar usuario</b>.</li>
+</ol>
+<div class="ok">Esta es una base de datos nueva: las cafeterías y los socios que cargaste en la versión de Claude (PHATTO, Nini Phatto y sus socios) no pasan solos. Hay que volver a cargarlos acá. Los socios reciben números nuevos.</div>
+
+<h2>Para actualizar la aplicación más adelante</h2>
+<p>En GitHub, entrá al repositorio, tocá <b>Add file → Upload files</b>, arrastrá el archivo nuevo (por ejemplo <span class="k">index.html</span>) y <b>Commit changes</b>. En unos minutos la aplicación instalada se actualiza sola.</p>
+</div></body>
+</html>
