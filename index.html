@@ -66,6 +66,7 @@ p{margin:0}
 .brand svg{flex:none}
 .brand b{font:700 21px/1 var(--display);letter-spacing:-.02em}
 .brand .bt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left}
+.go{color:var(--accent)}
 .brand small{font-size:12px;line-height:1;font-weight:600;color:var(--muted);letter-spacing:.02em}
 .top-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--surface)}
@@ -646,7 +647,7 @@ function viewTiendaGeneral(){
       '<form id="f-num" class="stack" novalidate><div class="field"><label class="lbl" for="n-code">Número de socio</label><input class="inp xl mono" id="n-code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="Ej. K7P2QX" value="'+esc(M.code||'')+'" style="letter-spacing:.2em;text-transform:uppercase"><span class="help">Son 6 letras y números. Te lo dan en el mostrador al asociarte.</span></div>'+
       '<p class="ferr">'+esc(M.err||'')+'</p><div><button class="btn primary lg" type="submit" '+(M.busy?'disabled':'')+'>'+(M.busy?'Buscando…':'Ver mi tarjeta')+'</button></div></form></section>';
   return '<div class="stack" style="gap:44px">'+
-    '<section class="store-h"><span class="logo" style="--s:96px;background:none;border:0">'+MARK.replace('width="34" height="34"','width="96" height="96"')+'</span><div style="min-width:0"><span class="eyebrow">Tienda</span><h1>Tienda VentiunGo</h1>'+
+    '<section class="store-h"><span class="logo" style="--s:96px;background:none;border:0">'+MARK.replace('width="34" height="34"','width="96" height="96"')+'</span><div style="min-width:0"><span class="eyebrow">Tienda</span><h1>Tienda Ventiun<span class="go">Go</span></h1>'+
       '<div class="store-meta"><span>Membresías de café en tu cafetería de siempre</span><span>180 días · 1 café por día</span></div></div></section>'+
     socio+
     '<section class="sec"><div class="sec-h"><span class="eyebrow">Beneficios de ser socio</span><h2>Tu café de todos los días, pagando solo una vez</h2></div><div class="perks">'+
@@ -736,7 +737,7 @@ function header(){
   } else {
     right=(S.view==='tienda'&&!S.tiendaId)?'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>':'<button class="btn sm" data-go="tienda">Volver a la tienda</button>';
   }
-  $('#top').innerHTML='<button class="brand" data-go="home" aria-label="VentiunGo, Socios Café, inicio">'+MARK+'<span class="bt"><b>VentiunGo</b><small>Socios Café</small></span></button><div class="top-r"><div class="theme" role="group" aria-label="Color de fondo"><button data-th="light" aria-pressed="'+(curTheme()==='light')+'"><i></i>Blanco</button><button data-th="dark" aria-pressed="'+(curTheme()==='dark')+'"><i></i>Negro</button></div>'+right+'</div>';
+  $('#top').innerHTML='<button class="brand" data-go="home" aria-label="VentiunGo, Socios Café, inicio">'+MARK+'<span class="bt"><b>Ventiun<span class="go">Go</span></b><small>Socios Café</small></span></button><div class="top-r"><div class="theme" role="group" aria-label="Color de fondo"><button data-th="light" aria-pressed="'+(curTheme()==='light')+'"><i></i>Blanco</button><button data-th="dark" aria-pressed="'+(curTheme()==='dark')+'"><i></i>Negro</button></div>'+right+'</div>';
 }
 
 function periodo(s){
