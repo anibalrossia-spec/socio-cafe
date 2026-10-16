@@ -9,9 +9,9 @@
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Socio Café">
+<meta name="apple-mobile-web-app-title" content="VentiunGo">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>Socio Café</title>
+<title>VentiunGo · Socios Café</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -65,6 +65,8 @@ p{margin:0}
 .brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;color:var(--ink);cursor:pointer;font:inherit}
 .brand svg{flex:none}
 .brand b{font:700 21px/1 var(--display);letter-spacing:-.02em}
+.brand .bt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left}
+.brand small{font-size:12px;line-height:1;font-weight:600;color:var(--muted);letter-spacing:.02em}
 .top-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--surface)}
 .theme button{border:0;background:none;color:var(--muted);padding:5px 12px;border-radius:999px;font:500 13px var(--body);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
@@ -492,7 +494,7 @@ function memPut(o){try{if(o)localStorage.setItem(MK,JSON.stringify(o));else loca
 function loadMember(cafe,code){
   var M=S.member;M.cafe=cafe;M.code=code;M.err='';M.busy=true;M.card=null;
   if(unsubT){unsubT();unsubT=null}
-  if(!DB){M.busy=false;M.err='Para ver tu tarjeta necesitás abrir Socio Café con la cuenta a la que la cafetería te compartió la página.';render();return}
+  if(!DB){M.busy=false;M.err='Para ver tu tarjeta necesitás abrir VentiunGo con la cuenta a la que la cafetería te compartió la página.';render();return}
   M.cafeData=S.dir.find(function(c){return c.id===cafe})||null;
   if(!M.cafeData)DB.doc('cafes/'+ownerOf(cafe)).get().then(function(sn){var pc=sn.exists&&pickCafe(cafe,sn.data());if(pc){M.cafeData=pc;render()}},function(){});
   try{
@@ -535,7 +537,7 @@ function viewSocioForm(M,cafes){
   return '<section class="form-wrap"><form id="f-soc" class="stack" novalidate>'+
     '<div class="sec-h"><span class="eyebrow">Soy socio</span><h1 style="font-size:clamp(28px,4vw,40px)">Mirá tu tarjeta vigente</h1>'+
     '<p class="muted">Elegí tu cafetería y escribí el código de socio que te dieron en el mostrador.</p></div>'+
-    (DB?'':'<div class="note">Para ver tu tarjeta necesitás abrir Socio Café con la cuenta a la que la cafetería te compartió la página.</div>')+
+    (DB?'':'<div class="note">Para ver tu tarjeta necesitás abrir VentiunGo con la cuenta a la que la cafetería te compartió la página.</div>')+
     '<div class="field"><label class="lbl" for="m-cafe">Cafetería</label><select class="inp xl" id="m-cafe">'+
       (cafes.length?cafes.map(function(c){return '<option value="'+esc(c.id)+'"'+(c.id===M.cafe?' selected':'')+'>'+esc(c.nombre)+(c.ciudad?' · '+esc(c.ciudad):'')+'</option>'}).join(''):'<option value="">Todavía no hay cafeterías</option>')+'</select></div>'+
     '<div class="field"><label class="lbl" for="m-code">Código de socio</label><input class="inp xl mono" id="m-code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="Ej. K7P2QX" value="'+esc(M.code)+'" style="letter-spacing:.2em;text-transform:uppercase"><span class="help">Son 6 letras y números. Figura en la tarjeta que te mostraron al asociarte.</span></div>'+
@@ -644,7 +646,7 @@ function viewTiendaGeneral(){
       '<form id="f-num" class="stack" novalidate><div class="field"><label class="lbl" for="n-code">Número de socio</label><input class="inp xl mono" id="n-code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="Ej. K7P2QX" value="'+esc(M.code||'')+'" style="letter-spacing:.2em;text-transform:uppercase"><span class="help">Son 6 letras y números. Te lo dan en el mostrador al asociarte.</span></div>'+
       '<p class="ferr">'+esc(M.err||'')+'</p><div><button class="btn primary lg" type="submit" '+(M.busy?'disabled':'')+'>'+(M.busy?'Buscando…':'Ver mi tarjeta')+'</button></div></form></section>';
   return '<div class="stack" style="gap:44px">'+
-    '<section class="store-h"><span class="logo" style="--s:96px;background:none;border:0">'+MARK.replace('width="34" height="34"','width="96" height="96"')+'</span><div style="min-width:0"><span class="eyebrow">Tienda</span><h1>Tienda Socio Café</h1>'+
+    '<section class="store-h"><span class="logo" style="--s:96px;background:none;border:0">'+MARK.replace('width="34" height="34"','width="96" height="96"')+'</span><div style="min-width:0"><span class="eyebrow">Tienda</span><h1>Tienda VentiunGo</h1>'+
       '<div class="store-meta"><span>Membresías de café en tu cafetería de siempre</span><span>180 días · 1 café por día</span></div></div></section>'+
     socio+
     '<section class="sec"><div class="sec-h"><span class="eyebrow">Beneficios de ser socio</span><h2>Tu café de todos los días, pagando solo una vez</h2></div><div class="perks">'+
@@ -666,7 +668,7 @@ function viewAcceso(){
 function viewTienda(){
   if(!S.tiendaId)return viewTiendaGeneral();
   var c=S.tienda,id=S.tiendaId,M=S.member;
-  if(!c)return '<section class="empty">'+(S.tiendaMiss?'Esta cafetería no existe o ya no usa Socio Café.':'Abriendo la tienda…')+'</section>';
+  if(!c)return '<section class="empty">'+(S.tiendaMiss?'Esta cafetería no existe o ya no usa VentiunGo.':'Abriendo la tienda…')+'</section>';
   var pc=Number(c.precioClasica)||0,pp=Number(c.precioPremium)||0,sc=Number(c.precioCafe)||0,sl=Number(c.precioLeche)||0;
   var plan=function(k,precio,suelto){
     var dia=precio?Math.round(precio/DUR):0,ah=suelto&&precio?suelto*DUR-precio:0;
@@ -686,7 +688,7 @@ function viewTienda(){
       ].map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+r[1]+'</span></li>'}).join('')+'</ul></section>';
   }
   return '<div class="stack" style="gap:44px">'+
-    (false?'<div class="note">Así ven tu tienda tus clientes. Para compartirla, agregá <b class="mono">#'+esc(id)+'</b> al final del enlace de Socio Café. <button class="link" data-go="panel">Volver a mi panel</button></div>':'')+
+    (false?'<div class="note">Así ven tu tienda tus clientes. Para compartirla, agregá <b class="mono">#'+esc(id)+'</b> al final del enlace de VentiunGo. <button class="link" data-go="panel">Volver a mi panel</button></div>':'')+
     '<section class="store-h">'+logoHTML(c,96)+'<div style="min-width:0"><span class="eyebrow">Membresía de café</span><h1 style="overflow-wrap:anywhere">'+esc(c.nombre)+'</h1>'+
       '<div class="store-meta">'+(c.direccion||c.ciudad?'<span>'+esc([c.direccion,c.ciudad].filter(Boolean).join(' · '))+'</span>':'')+'<span>Café del día de '+esc(c.desde||'08:00')+' a '+esc(c.hasta||'12:00')+'</span>'+(c.telefono?'<span class="mono">'+esc(c.telefono)+'</span>':'')+'</div></div></section>'+
     account+
@@ -701,7 +703,7 @@ function viewTienda(){
       '<li><h3>Pasá por el mostrador</h3><p class="muted">Elegí Clásica o Premium y pagá los 180 días.</p></li>'+
       '<li><h3>Recibí tu número de socio</h3><p class="muted">Son 6 letras y números, únicos para vos.</p></li>'+
       '<li><h3>Mirá tu tarjeta</h3><p class="muted">En la tienda, escribí tu número de socio y vas a ver tu consumo.</p></li></ol></section>'+
-    '<div><button class="link" data-go="tienda">← Volver a la Tienda Socio Café</button></div>'+
+    '<div><button class="link" data-go="tienda">← Volver a la Tienda VentiunGo</button></div>'+
   '</div>';
 }
 
@@ -734,7 +736,7 @@ function header(){
   } else {
     right=(S.view==='tienda'&&!S.tiendaId)?'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>':'<button class="btn sm" data-go="tienda">Volver a la tienda</button>';
   }
-  $('#top').innerHTML='<button class="brand" data-go="home" aria-label="Socio Café, inicio">'+MARK+'<b>Socio Café</b></button><div class="top-r"><div class="theme" role="group" aria-label="Color de fondo"><button data-th="light" aria-pressed="'+(curTheme()==='light')+'"><i></i>Blanco</button><button data-th="dark" aria-pressed="'+(curTheme()==='dark')+'"><i></i>Negro</button></div>'+right+'</div>';
+  $('#top').innerHTML='<button class="brand" data-go="home" aria-label="VentiunGo, Socios Café, inicio">'+MARK+'<span class="bt"><b>VentiunGo</b><small>Socios Café</small></span></button><div class="top-r"><div class="theme" role="group" aria-label="Color de fondo"><button data-th="light" aria-pressed="'+(curTheme()==='light')+'"><i></i>Blanco</button><button data-th="dark" aria-pressed="'+(curTheme()==='dark')+'"><i></i>Negro</button></div>'+right+'</div>';
 }
 
 function periodo(s){
@@ -797,7 +799,7 @@ function viewHome(){
   return '<section class="hero">'+
     '<div class="hero-copy"><span class="eyebrow">Membresías para cafeterías</span>'+
       '<h1>Tu cliente paga seis meses. <em>Vos servís el café de cada día.</em></h1>'+
-      '<p class="lead">Socio Café es el sistema para vender abonos de café por 180 días en tu local. Cargás a tus socios, ellos pasan por el mostrador y en un toque marcás su café del día, dentro del horario que vos fijás.</p>'+
+      '<p class="lead">VentiunGo es el sistema para vender abonos de café por 180 días en tu local. Cargás a tus socios, ellos pasan por el mostrador y en un toque marcás su café del día, dentro del horario que vos fijás.</p>'+
       '<div class="cta">'+(S.cafe?'<button class="btn primary lg" data-go="panel">Abrir mi mostrador</button>':'<button class="btn primary lg" data-go="tienda">Entrar a la tienda</button>')+'<a class="btn lg" href="#beneficios">Ver beneficios</a></div>'+
       '<div class="facts"><span><b>1 café</b>por socio y por día</span><span><b>2 planes</b>Clásica y Premium</span><span><b>Tu logo</b>en cada tarjeta</span></div>'+
     '</div>'+membCard(ex,!S.cafe)+'</section>'+
@@ -831,7 +833,7 @@ function viewHome(){
       '<div class="card plan premium"><span class="chip premium"><i></i>Premium</span><h3>Café con leche todos los días</h3><ul><li>Un café con leche por día, en el horario de canje</li><li>30 días desde el pago</li><li>Precio sugerido por la cafetería'+(p2?': <b class="num" style="color:var(--ink)">'+money(p2)+'</b>':'')+'</li></ul></div>'+
     '</div></section>'+
 
-    '<section class="sec"><div class="sec-h"><span class="eyebrow">Cafeterías adheridas</span><h2>Ya trabajan con Socio Café</h2></div>'+dir+'</section>'+
+    '<section class="sec"><div class="sec-h"><span class="eyebrow">Cafeterías adheridas</span><h2>Ya trabajan con VentiunGo</h2></div>'+dir+'</section>'+
 
     (S.cafe?'':'<section class="join"><div><h2>¿Tenés una cafetería?</h2><p class="muted" style="margin-top:6px">Creá tu cuenta gratis y empezá a vender membresías hoy.</p></div><button class="btn primary lg" data-go="tienda">Entrar a la tienda</button></section>');
 }
@@ -926,7 +928,7 @@ function tabSocios(){
 function tabCuenta(){
   var c=S.cafe;
   return '<div class="split"><div class="card stack"><h3>Datos de la cafetería</h3><ul class="list">'+
-    [['Dirección',c.direccion],['Ciudad',c.ciudad],['Teléfono',c.telefono],['Horario de canje',(c.desde||'08:00')+' a '+(c.hasta||'12:00')],['Precio Clásica',c.precioClasica?money(c.precioClasica):'Sin cargar'],['Precio Premium',c.precioPremium?money(c.precioPremium):'Sin cargar'],['Café solo suelto',c.precioCafe?money(c.precioCafe):'Sin cargar'],['Café con leche suelto',c.precioLeche?money(c.precioLeche):'Sin cargar'],['Enlace de tu tienda','Enlace de Socio Café + #'+S.uid]]
+    [['Dirección',c.direccion],['Ciudad',c.ciudad],['Teléfono',c.telefono],['Horario de canje',(c.desde||'08:00')+' a '+(c.hasta||'12:00')],['Precio Clásica',c.precioClasica?money(c.precioClasica):'Sin cargar'],['Precio Premium',c.precioPremium?money(c.precioPremium):'Sin cargar'],['Café solo suelto',c.precioCafe?money(c.precioCafe):'Sin cargar'],['Café con leche suelto',c.precioLeche?money(c.precioLeche):'Sin cargar'],['Enlace de tu tienda','Enlace de VentiunGo + #'+S.uid]]
     .map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+esc(r[1]||'—')+'</span></li>'}).join('')+
     '</ul><div><button class="btn primary" data-go="registro">Editar datos y logo</button></div>'+
     '<div class="stack" style="margin-top:10px;padding-top:16px;border-top:1px solid var(--line)"><h3>Usuarios</h3><p class="muted" style="font-size:14px">Cada usuario entra a esta cafetería con su propia contraseña.</p>'+
