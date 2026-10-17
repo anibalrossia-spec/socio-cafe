@@ -318,25 +318,65 @@ function validarUsuario(u,p,p2){
 function logout(){if(AUTH)AUTH.signOut();S.soporte=false;S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
 var SUP_USER='ventiungo',SUP_EMAIL='soporte@ventiungo.app';
 function esSoporteU(u){return !!(u&&u.email===SUP_EMAIL)}
+var SUP_RECOVERY='anibalrossia@gmail.com',WA_SUP='5493415628884';
 function loginSoporte(pass){
   S.loginBusy=true;render();
-  AUTH.signInWithEmailAndPassword(SUP_EMAIL,pass).catch(function(e){
-    if(!/user-not-found|invalid-credential|invalid-login/.test(e&&e.code||''))throw e;
-    return AUTH.createUserWithEmailAndPassword(SUP_EMAIL,pass).catch(function(e2){throw /email-already-in-use/.test(e2&&e2.code||'')?{code:'auth/wrong-password'}:e2});
+  var NOK=/user-not-found|invalid-credential|invalid-login|wrong-password|invalid-email/;
+  AUTH.signInWithEmailAndPassword(SUP_RECOVERY,pass).catch(function(e){
+    if(!NOK.test(e&&e.code||''))throw e;
+    return AUTH.signInWithEmailAndPassword(SUP_EMAIL,pass);
   }).then(function(){S.loginBusy=false;S.loginErr=''},function(e){S.loginBusy=false;S.loginErr=errAuth(e);render()});
+}
+/* ¿Olvidaste tu contraseña? cafetería: WhatsApp a VentiunGo · soporte: enlace al email */
+function olvide(){
+  var u=String(($('#l-user')||{}).value||'').trim().toLowerCase();
+  if(u===SUP_USER){if(AUTH)AUTH.sendPasswordResetEmail(SUP_RECOVERY).catch(function(){});toast('Si '+SUP_RECOVERY+' está vinculado a soporte, te llega un email para crear una contraseña nueva');return}
+  window.open('https://wa.me/'+WA_SUP+'?text='+encodeURIComponent('Hola VentiunGo, olvidé la contraseña de Socios Café. Mi usuario es: '+(u||'(no me acuerdo)')+'. ¿Me ayudan a cambiarla?'),'_blank');
+}
+/* Si soporte le dio una clave nueva a un usuario, su cuenta interna cambia: el alias la indica */
+function aliasEmail(u){return DB.doc('alias/'+u).get().then(function(sn){return sn.exists&&sn.data().email||emailDe(u)},function(){return emailDe(u)})}
+function resetUsuario(cafeId,user,pass,pass2){
+  var m=validarUsuario(user,pass,pass2);if(m)return Promise.reject(m);
+  var u=String(user).trim().toLowerCase(),old=S.miembros.find(function(x){return x.u===u});
+  var email=u+'.rst'+Date.now().toString(36)+DOM_U;
+  var sec=firebase.apps.find(function(a){return a.name==='sec'})||firebase.initializeApp(window.SOCIO_CAFE_FIREBASE,'sec');
+  var sa=sec.auth();
+  return sa.setPersistence(firebase.auth.Auth.Persistence.NONE).then(function(){return sa.createUserWithEmailAndPassword(email,pass)}).then(function(cred){
+    var nuid=cred.user.uid;
+    return sec.firestore().doc('usuarios/'+nuid).set({cafeId:cafeId,u:u}).then(function(){return sa.signOut()})
+      .then(function(){return DB.doc('cafes/'+cafeId+'/miembros/'+nuid).set({u:u,alta:hoyS()})})
+      .then(function(){return DB.doc('alias/'+u).set({email:email})})
+      .then(function(){if(old&&old.uid!==nuid)return DB.doc('cafes/'+cafeId+'/miembros/'+old.uid).delete()});
+  }).catch(function(e){throw typeof e==='string'?e:errAuth(e)});
+}
+function resetForm(){
+  return '<form id="f-resetu" class="stack" novalidate style="margin-top:12px;padding:14px;border:1px dashed var(--line);border-radius:14px"><h3>Nueva clave para <span class="mono">'+esc(S.resetU)+'</span></h3>'+
+    '<div class="field"><label class="lbl" for="ru-1">Contraseña nueva</label><input class="inp" id="ru-1" type="password" autocomplete="new-password"></div>'+
+    '<div class="field"><label class="lbl" for="ru-2">Repetir contraseña</label><input class="inp" id="ru-2" type="password" autocomplete="new-password"></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Guardar clave</button><button class="btn" type="button" data-resetcancel>Cancelar</button></div><p class="ferr" id="ru-err"></p></form>';
+}
+function supCard(){
+  var cu=AUTH&&AUTH.currentUser,linked=!!(cu&&cu.email===SUP_RECOVERY);
+  return '<div class="card stack"><h3>Tu cuenta de soporte</h3><p class="muted" style="font-size:14px">'+(linked?'Email para recuperar la contraseña: <b>'+SUP_RECOVERY+'</b>':'Todavía no tiene un email para recuperar la contraseña.')+'</p>'+
+    (linked?'':'<div><button class="btn" data-suplink>Vincular '+SUP_RECOVERY+'</button></div>')+
+    '<form id="f-suppass" class="stack" novalidate><h3>Cambiar contraseña</h3>'+
+    '<div class="field"><label class="lbl" for="sup-0">Contraseña actual</label><input class="inp" id="sup-0" type="password" autocomplete="current-password"></div>'+
+    '<div class="field"><label class="lbl" for="sup-1">Contraseña nueva</label><input class="inp" id="sup-1" type="password" autocomplete="new-password"></div>'+
+    '<div class="field"><label class="lbl" for="sup-2">Repetir contraseña nueva</label><input class="inp" id="sup-2" type="password" autocomplete="new-password"></div>'+
+    '<div><button class="btn primary" type="submit">Guardar contraseña</button></div><p class="ferr" id="sup-err"></p></form></div>';
 }
 function viewSoporte(){
   var l=(S.dirAll||[]).slice().sort(function(a,b){return String(a.nombre).localeCompare(String(b.nombre))});
   return '<section class="stack" style="gap:18px;max-width:640px;margin:0 auto;width:100%"><div class="sec-h"><span class="eyebrow">Soporte VentiunGo</span><h1 style="font-size:clamp(26px,4vw,36px)">Elegí una cafetería</h1><p class="muted">Entrás a su panel para ver y ayudar con lo que necesite.</p></div>'+
     (l.length?'<div class="stack" style="gap:10px">'+l.map(function(c){return '<button class="card" data-sop="'+esc(c.id)+'" style="display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;width:100%">'+logoHTML(c,40)+'<span><b>'+esc(c.nombre)+'</b></span></button>'}).join('')+'</div>':'<p class="muted">Todavía no hay cafeterías registradas.</p>')+
-    '</section>';
+    supCard()+'</section>';
 }
 function login(user,pass){
   var u=String(user||'').trim().toLowerCase();
   if(!u||!pass){S.loginErr='Usuario o contraseña incorrectos.';render();return}
   if(u===SUP_USER){loginSoporte(pass);return}
   S.loginBusy=true;render();
-  AUTH.signInWithEmailAndPassword(emailDe(u),pass).then(function(){S.loginBusy=false;S.loginErr='';S.user=u;S.goHome=true},function(e){S.loginBusy=false;S.loginErr=errAuth(e);render();var f=$('#l-pass');if(f)f.focus()});
+  aliasEmail(u).then(function(em){return AUTH.signInWithEmailAndPassword(em,pass)}).then(function(){S.loginBusy=false;S.loginErr='';S.user=u;S.goHome=true},function(e){S.loginBusy=false;S.loginErr=errAuth(e);render();var f=$('#l-pass');if(f)f.focus()});
 }
 function setCreds(id,user,pass,pass2){
   var m=validarUsuario(AUTH.currentUser?S.user||'xxx':user,pass,pass2);if(m)return Promise.reject(m);
@@ -410,7 +450,7 @@ function boot(){
   watchDir();
   AUTH.onAuthStateChanged(function(u){
     if(!u){S.uid=null;S.out=true;S.user='';setActive(null);render();return}
-    S.uid=u.uid;S.out=false;S.user=(u.email||'').replace(DOM_U,'');
+    S.uid=u.uid;S.out=false;S.user=(u.email||'').replace(DOM_U,'').replace(/\.rst[a-z0-9]+$/,'');
     if(esSoporteU(u)){S.soporte=true;S.user=SUP_USER;if(!S.cafeId){S.view='soporte';window.scrollTo(0,0)}render();return}
     S.soporte=false;
     DB.doc('usuarios/'+u.uid).get().then(function(sn){
@@ -643,7 +683,7 @@ function cafeCard(){
   return '<h3>Iniciá sesión en tu cafetería</h3>'+
     '<form id="f-login2" class="stack" novalidate><div class="field"><label class="lbl" for="l-user">Usuario</label><input class="inp" id="l-user" autocomplete="username" autocapitalize="none"></div>'+
     '<div class="field"><label class="lbl" for="l-pass">Contraseña</label><input class="inp" id="l-pass" type="password" autocomplete="current-password"></div>'+
-    '<p class="ferr">'+esc(S.loginErr||'')+'</p><div><button class="btn primary" type="submit" '+(S.loginBusy||!AUTH?'disabled':'')+'>'+(S.loginBusy?'Entrando…':'Iniciar sesión')+'</button></div></form>'+
+    '<p class="ferr">'+esc(S.loginErr||'')+'</p><div><button class="btn primary" type="submit" '+(S.loginBusy||!AUTH?'disabled':'')+'>'+(S.loginBusy?'Entrando…':'Iniciar sesión')+'</button><button type="button" class="link" data-olvide style="margin-left:14px">¿Olvidaste tu contraseña?</button></div></form>'+
     '<div style="padding-top:6px;border-top:1px solid var(--line)"><p class="muted" style="font-size:14px;margin-bottom:8px">¿Todavía no tenés usuario o es otra cafetería?</p><button class="btn" data-newcafe>Crear cuenta nueva</button></div>';
 }
 function buscarSocio(code){
@@ -955,7 +995,7 @@ function tabCuenta(){
     .map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+esc(r[1]||'—')+'</span></li>'}).join('')+
     '</ul><div><button class="btn primary" data-go="registro">Editar datos y logo</button></div>'+
     '<div class="stack" style="margin-top:10px;padding-top:16px;border-top:1px solid var(--line)"><h3>Usuarios</h3><p class="muted" style="font-size:14px">Cada usuario entra a esta cafetería con su propia contraseña.</p>'+
-    '<ul class="list">'+credList(S.cafeId).map(function(x){return '<li><span class="mono">'+esc(x.u)+(x.u===S.user?' <span class="muted">(vos)</span>':'')+'</span>'+(credList(S.cafeId).length>1&&x.u!==S.user?'<button class="link" data-quitaru="'+esc(x.u)+'">Quitar</button>':'')+'</li>'}).join('')+'</ul></div>'+
+    '<ul class="list">'+credList(S.cafeId).map(function(x){return '<li><span class="mono">'+esc(x.u)+(x.u===S.user?' <span class="muted">(vos)</span>':'')+'</span>'+(credList(S.cafeId).length>1&&x.u!==S.user?'<button class="link" data-quitaru="'+esc(x.u)+'">Quitar</button>':'')+(S.soporte?'<button class="link" data-resetu="'+esc(x.u)+'" style="margin-left:10px">Nueva clave</button>':'')+'</li>'}).join('')+'</ul>'+(S.soporte&&S.resetU?resetForm():'')+'</div>'+
     '<form id="f-adduser" class="stack" novalidate><h3>Agregar usuario</h3>'+
       '<div class="field"><label class="lbl" for="au-user">Usuario</label><input class="inp" id="au-user" autocomplete="off" autocapitalize="none"></div>'+
       '<div class="field"><label class="lbl" for="au-1">Contraseña</label><input class="inp" id="au-1" type="password" autocomplete="new-password"></div>'+
@@ -1008,6 +1048,10 @@ document.addEventListener('click',function(e){
     if(mp.hasAttribute('data-mpng')){savePNG(S.member.cafeData,S.member.card);return}
     var so=S.socios.find(function(z){return z.id===mp.dataset.png});if(so)savePNG(S.cafe,so);return}
   if(e.target.closest('[data-logout]')){logout();return}
+  if(e.target.closest('[data-olvide]')){olvide();return}
+  var rsu=e.target.closest('[data-resetu]');if(rsu&&S.soporte){S.resetU=rsu.dataset.resetu;render();var f1=$('#ru-1');if(f1)f1.focus();return}
+  if(e.target.closest('[data-resetcancel]')){S.resetU=null;render();return}
+  if(e.target.closest('[data-suplink]')){var cu=AUTH&&AUTH.currentUser;if(!cu)return;cu.verifyBeforeUpdateEmail(SUP_RECOVERY).then(function(){toast('Te mandamos un email a '+SUP_RECOVERY+': abrilo y confirmá con el enlace')},function(er){toast(/recent-login/.test(er&&er.code||'')?'Cerrá sesión, volvé a entrar como Ventiungo y probá de nuevo.':/already-in-use/.test(er&&er.code||'')?'Ese email ya lo usa otra cuenta.':'No se pudo vincular. Probá de nuevo.',true)});return}
   var sop=e.target.closest('[data-sop]');if(sop&&S.soporte){S.goHome=false;S.cafe=null;setActive(null);setActive(sop.dataset.sop);S.view='panel';render();window.scrollTo(0,0);return}
   var qu=e.target.closest('[data-quitaru]');if(qu){quitarUsuario(S.cafeId,qu.dataset.quitaru);return}
   var rb=e.target.closest('[data-rol]');if(rb){S.rol=rb.dataset.rol;render();return}
@@ -1059,6 +1103,13 @@ document.addEventListener('submit',function(e){
     if(!cf2){S.accErr2='Elegí tu cafetería.';render();return}
     if(ac2.length!==6){S.accErr2='El número de socio tiene 6 letras y números.';render();return}
     openTienda(cf2);crearCuentaSocio(ac2);return}
+  if(e.target.id==='f-resetu'){var ru=S.resetU;resetUsuario(S.cafeId,ru,$('#ru-1').value,$('#ru-2').value).then(function(){S.resetU=null;render();toast('Listo: '+ru+' ya entra con la clave nueva')},function(m){$('#ru-err').textContent=m});return}
+  if(e.target.id==='f-suppass'){var cu2=AUTH&&AUTH.currentUser,o0=$('#sup-0').value,n1=$('#sup-1').value,n2=$('#sup-2').value;
+    if(!cu2)return;if(!o0){$('#sup-err').textContent='Ingresá la contraseña actual.';return}
+    if(n1.length<6){$('#sup-err').textContent='La contraseña nueva tiene que tener al menos 6 caracteres.';return}
+    if(n1!==n2){$('#sup-err').textContent='Las contraseñas nuevas no coinciden.';return}
+    cu2.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(cu2.email,o0)).then(function(){return cu2.updatePassword(n1)})
+      .then(function(){render();toast('Contraseña de soporte cambiada (vale para las tres apps)')},function(er){$('#sup-err').textContent=/wrong-password|invalid-credential|invalid-login/.test(er&&er.code||'')?'La contraseña actual no es correcta.':errAuth(er)});return}
   if(e.target.id==='f-acc'){var ac=$('#a-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(ac.length!==6){S.accErr='El número de socio tiene 6 letras y números.';render();return}crearCuentaSocio(ac);return}
   if(e.target.id==='f-soc2'){var c2=$('#m-code2').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');S.member.lcodeIn=c2;
     var hit=S.socios.find(function(z){return z.codigo===c2});
