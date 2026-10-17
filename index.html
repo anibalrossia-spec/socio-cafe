@@ -315,10 +315,26 @@ function validarUsuario(u,p,p2){
   if(String(p||'').length<6)return 'La contraseña tiene que tener al menos 6 caracteres.';
   if(p!==p2)return 'Las contraseñas no coinciden.';
   return '';}
-function logout(){if(AUTH)AUTH.signOut();S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
+function logout(){if(AUTH)AUTH.signOut();S.soporte=false;S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
+var SUP_USER='ventiungo',SUP_EMAIL='soporte@ventiungo.app';
+function esSoporteU(u){return !!(u&&u.email===SUP_EMAIL)}
+function loginSoporte(pass){
+  S.loginBusy=true;render();
+  AUTH.signInWithEmailAndPassword(SUP_EMAIL,pass).catch(function(e){
+    if(!/user-not-found|invalid-credential|invalid-login/.test(e&&e.code||''))throw e;
+    return AUTH.createUserWithEmailAndPassword(SUP_EMAIL,pass).catch(function(e2){throw /email-already-in-use/.test(e2&&e2.code||'')?{code:'auth/wrong-password'}:e2});
+  }).then(function(){S.loginBusy=false;S.loginErr=''},function(e){S.loginBusy=false;S.loginErr=errAuth(e);render()});
+}
+function viewSoporte(){
+  var l=(S.dirAll||[]).slice().sort(function(a,b){return String(a.nombre).localeCompare(String(b.nombre))});
+  return '<section class="stack" style="gap:18px;max-width:640px;margin:0 auto;width:100%"><div class="sec-h"><span class="eyebrow">Soporte VentiunGo</span><h1 style="font-size:clamp(26px,4vw,36px)">Elegí una cafetería</h1><p class="muted">Entrás a su panel para ver y ayudar con lo que necesite.</p></div>'+
+    (l.length?'<div class="stack" style="gap:10px">'+l.map(function(c){return '<button class="card" data-sop="'+esc(c.id)+'" style="display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;width:100%">'+logoHTML(c,40)+'<span><b>'+esc(c.nombre)+'</b></span></button>'}).join('')+'</div>':'<p class="muted">Todavía no hay cafeterías registradas.</p>')+
+    '</section>';
+}
 function login(user,pass){
   var u=String(user||'').trim().toLowerCase();
   if(!u||!pass){S.loginErr='Usuario o contraseña incorrectos.';render();return}
+  if(u===SUP_USER){loginSoporte(pass);return}
   S.loginBusy=true;render();
   AUTH.signInWithEmailAndPassword(emailDe(u),pass).then(function(){S.loginBusy=false;S.loginErr='';S.user=u;S.goHome=true},function(e){S.loginBusy=false;S.loginErr=errAuth(e);render();var f=$('#l-pass');if(f)f.focus()});
 }
@@ -395,6 +411,8 @@ function boot(){
   AUTH.onAuthStateChanged(function(u){
     if(!u){S.uid=null;S.out=true;S.user='';setActive(null);render();return}
     S.uid=u.uid;S.out=false;S.user=(u.email||'').replace(DOM_U,'');
+    if(esSoporteU(u)){S.soporte=true;S.user=SUP_USER;if(!S.cafeId){S.view='soporte';window.scrollTo(0,0)}render();return}
+    S.soporte=false;
     DB.doc('usuarios/'+u.uid).get().then(function(sn){
       var cid=sn.exists&&sn.data().cafeId;
       if(!cid){if(!S.creating){AUTH.signOut()}return}
@@ -730,6 +748,10 @@ function header(){
   var right='';
   if(S.view==='tienda'){
     right=S.tiendaId?'<button class="btn sm" data-go="tienda">Volver a la tienda</button>':(esSocio()?'':'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>');
+  } else if(S.soporte){
+    right=(S.cafe&&S.view!=='panel'?'<button class="btn sm primary" data-go="panel">'+logoHTML(S.cafe,22)+' Panel de '+esc(S.cafe.nombre)+'</button>':'')+
+      (S.view!=='soporte'?'<button class="btn sm" data-go="soporte">Cafeterías</button>':'')+
+      '<button class="btn sm danger" data-logout>Cerrar sesión</button>';
   } else if(S.cafe){
     right=(S.view!=='home'?'<button class="btn sm" data-go="home">Información del servicio</button>':'')+
       (S.view!=='panel'?'<button class="btn sm primary" data-go="panel">'+logoHTML(S.cafe,22)+' Mi panel</button>':'')+
@@ -955,7 +977,8 @@ function render(){
   if(S.view==='panel'&&!S.cafe){S.view='tienda';S.tiendaId=null}
   if(S.view==='registro'&&!S.cafe&&!S.newCafe&&S.mine.length){S.view='tienda';S.tiendaId=null}
   if(S.mode==='sinconfig'){$('#view').innerHTML='<section class="card stack" style="max-width:640px;margin:40px auto"><span class="eyebrow">Configuración pendiente</span><h1 style="font-size:28px">Falta conectar la base de datos</h1><p class="muted">Abrí el archivo <b class="mono">config.js</b> y pegá los datos de tu proyecto de Firebase, como explica la guía <b class="mono">LEEME.html</b>.</p></section>';return}
-  var html=S.view==='acceso'?viewAcceso():S.view==='tienda'?viewTienda():S.view==='registro'?viewRegistro():S.view==='panel'?viewPanel():viewHome();
+  if(S.view==='soporte'&&!S.soporte){S.view='tienda';S.tiendaId=null}
+  var html=S.view==='soporte'?viewSoporte():S.view==='acceso'?viewAcceso():S.view==='tienda'?viewTienda():S.view==='registro'?viewRegistro():S.view==='panel'?viewPanel():viewHome();
   var act=document.activeElement,aid=act&&act.id,pos=act&&act.selectionStart;
   $('#view').innerHTML=html;
   if(aid){var el=document.getElementById(aid);if(el&&el!==document.body){el.focus();try{if(pos!=null)el.setSelectionRange(pos,pos)}catch(_){}}}
@@ -985,6 +1008,7 @@ document.addEventListener('click',function(e){
     if(mp.hasAttribute('data-mpng')){savePNG(S.member.cafeData,S.member.card);return}
     var so=S.socios.find(function(z){return z.id===mp.dataset.png});if(so)savePNG(S.cafe,so);return}
   if(e.target.closest('[data-logout]')){logout();return}
+  var sop=e.target.closest('[data-sop]');if(sop&&S.soporte){S.goHome=false;S.cafe=null;setActive(null);setActive(sop.dataset.sop);S.view='panel';render();window.scrollTo(0,0);return}
   var qu=e.target.closest('[data-quitaru]');if(qu){quitarUsuario(S.cafeId,qu.dataset.quitaru);return}
   var rb=e.target.closest('[data-rol]');if(rb){S.rol=rb.dataset.rol;render();return}
   if(e.target.closest('[data-cancelreg]')){var wasNew=S.newCafe||!S.cafe;S.newCafe=false;S.draft=null;if(wasNew){S.view='acceso';render()}else{S.view='panel';render()}return}
