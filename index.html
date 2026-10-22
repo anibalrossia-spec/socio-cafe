@@ -256,6 +256,41 @@ p{margin:0}
   @keyframes rise{from{transform:translateY(14px) rotate(-1.5deg)}to{transform:none}}
   @keyframes fill{from{transform:scale(.4)}to{transform:none}}
 }
+
+/* salón y mesas */
+.sl-modos,.sl-secs{display:flex;gap:8px;flex-wrap:wrap}
+.chip-b{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font:500 14px var(--body);cursor:pointer}
+.chip-b.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.sl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.sl-mesa{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:104px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.sl-mesa:hover{background:var(--surface-2)}
+.sl-mesa b{font:700 18px var(--display)}
+.sl-mesa small{color:var(--muted);font-size:12px}
+.sl-mesa.occ{background:var(--warn-bg);border-color:var(--warn)}
+.sl-mesa.occ .num{font-weight:700;font-size:16px}
+.sl-items li{align-items:center;flex-wrap:nowrap}
+.sl-q{display:inline-flex;align-items:center;gap:8px}
+.sl-q .btn{width:34px;padding:0}
+.sl-tot{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:2px solid var(--ink);font:700 22px var(--display)}
+.sl-prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;max-height:460px;overflow:auto}
+.sl-prod{display:flex;flex-direction:column;gap:4px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.sl-prod:hover{background:var(--surface-2);border-color:var(--accent)}
+.sl-prod b{font-size:14px;line-height:1.25}
+.sl-prod span{color:var(--muted);font-size:13px}
+.sl-cerrar{padding:16px;border-radius:10px;background:var(--surface-2)}
+.sl-tags{display:flex;flex-wrap:wrap;gap:8px}
+.sl-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 6px 6px 12px;border:1px solid var(--line);border-radius:999px;font-size:14px}
+.sl-x{border:0;background:var(--surface-2);color:var(--muted);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1}
+.sl-x:hover{background:var(--bad-bg);color:var(--bad)}
+.sl-tkwrap{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
+.tk{font:13px/1.45 'Courier New',ui-monospace,monospace;color:#111;background:#fff;padding:6px;max-width:300px;margin:0 auto}
+.tk-c{text-align:center}.tk-n{font-size:16px}
+.tk-l{border-top:1px dashed #555;margin:8px 0}
+.tk-t{width:100%;border-collapse:collapse}.tk-t td{padding:1px 0;vertical-align:top}.tk-t .r{text-align:right;white-space:nowrap;padding-left:8px}
+.tk-tot td{font-weight:700;font-size:15px}
+#print-area{display:none}
+@media print{body>*:not(#print-area){display:none!important}#print-area{display:block!important}#print-area .tk{max-width:72mm;margin:0;padding:0}@page{margin:4mm}}
+@media (max-width:880px){.sl-tkwrap{grid-template-columns:minmax(0,1fr)}}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -428,6 +463,7 @@ function socioCol(){return DB.collection('cafes/'+S.cafeId+'/socios')}
 function tPath(id,code){return 'tarjetas/'+code}
 function saveCafe(c,id){return DB.doc('cafes/'+id).set(c,{merge:true})}
 function subSocios(){
+  subSalon();
   if(unsubS){unsubS();unsubS=null}
   S.socios=[];S.sel=null;
   if(!S.cafeId)return;
@@ -836,7 +872,7 @@ function fichaSocio(sel,v){
   return '<div class="ficha"><div class="stack">'+membCard(S.cafe,false,sel)+
     '<div class="legend"><span><i class="u"></i>Café entregado</span><span><i class="n"></i>Sin canjear</span><span><i class="f"></i>Por venir</span><span><i class="t"></i>Hoy</span></div></div>'+
     '<div class="card stack">'+
-      (usado?'<div class="done">✓ Café de hoy entregado</div>':'<button class="btn primary lg" data-act="canje" '+(ok?'':'disabled')+'>Registrar '+PLAN[sel.plan].prod.toLowerCase()+' de hoy</button>')+
+      (usado?'<div class="done">✓ Café de hoy entregado</div>':(ok?slCanjeSelect():'')+'<button class="btn primary lg" data-act="canje" '+(ok?'':'disabled')+'>Registrar '+PLAN[sel.plan].prod.toLowerCase()+' de hoy</button>')+
       (why?'<p class="muted">'+esc(why)+'</p>':'')+
       '<ul class="list">'+[
         ['Estado','<span class="pill '+vg.cls+'">'+esc(vg.txt)+'</span>'],
@@ -935,8 +971,8 @@ function viewRegistro(){
 
 function viewPanel(){
   var c=S.cafe,v=ventana();
-  var tabs=[['mostrador','Mostrador'],['socios','Socios'],['stats','Estadísticas'],['cuenta','Mi cuenta']];
-  var body=S.tab==='stats'?tabStats():S.tab==='soysocio'?tabSoySocio():S.tab==='socios'?tabSocios():S.tab==='cuenta'?tabCuenta():tabMostrador(v);
+  var tabs=[['mostrador','Mostrador'],['mesas','Mesas'],['socios','Socios'],['stats','Estadísticas'],['cuenta','Mi cuenta']];
+  var body=S.tab==='mesas'?tabMesas():S.tab==='stats'?tabStats():S.tab==='soysocio'?tabSoySocio():S.tab==='socios'?tabSocios():S.tab==='cuenta'?tabCuenta():tabMostrador(v);
   return '<section class="stack" style="gap:22px">'+
     '<div class="panel-h"><div class="id">'+logoHTML(c,64)+'<div style="min-width:0"><span class="eyebrow">Mi cafetería</span><h1>'+esc(c.nombre)+'</h1></div></div>'+
     '<div class="inline"><span class="pill '+(v.open?'ok':'bad')+'">Canje '+(v.open?'abierto':'cerrado')+' · '+esc(v.desde)+'–'+esc(v.hasta)+'</span><button class="btn sm danger" data-logout>Cerrar sesión</button></div></div>'+
@@ -1038,6 +1074,235 @@ function readLogo(file){
   });
 }
 
+/* ---------- salón: sectores, mesas, productos y tickets ---------- */
+S.sl={cfg:{sectores:[],productos:[]},abiertas:{},ventas:[],sector:null,mesa:null,modo:'salon',cerrar:null,pcat:'',pq:'',ticket:null,editP:null,canjeMesa:''};
+var unsubSlC=null,unsubSlM=null,unsubSlV=null;
+var CAT_SUG=['Cafetería','Pastelería','Salado','Bebidas','Otros'];
+function slId(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function slCfgRef(){return DB.doc('cafes/'+S.cafeId+'/salon/config')}
+function slMesRef(){return DB.doc('cafes/'+S.cafeId+'/salon/mesas')}
+function slVenCol(){return DB.collection('cafes/'+S.cafeId+'/ventas')}
+function subSalon(){
+  if(unsubSlC){unsubSlC();unsubSlC=null}if(unsubSlM){unsubSlM();unsubSlM=null}if(unsubSlV){unsubSlV();unsubSlV=null}
+  S.sl.cfg={sectores:[],productos:[]};S.sl.abiertas={};S.sl.ventas=[];S.sl.mesa=null;S.sl.cerrar=null;S.sl.ticket=null;
+  if(!S.cafeId||!DB)return;
+  unsubSlC=slCfgRef().onSnapshot(function(sn){var d=sn.exists?sn.data():{};S.sl.cfg={sectores:d.sectores||[],productos:d.productos||[],n:d.n||0};if(S.tab==='mesas'||S.sel)slRender()},function(){});
+  unsubSlM=slMesRef().onSnapshot(function(sn){S.sl.abiertas=(sn.exists&&sn.data().abiertas)||{};if(S.tab==='mesas'||S.sel)slRender()},function(){});
+  unsubSlV=slVenCol().where('dia','==',hoyS()).onSnapshot(function(q){S.sl.ventas=q.docs.map(function(d){return Object.assign({id:d.id},d.data())}).sort(function(a,b){return (b.n||0)-(a.n||0)});if(S.tab==='mesas')slRender()},function(){});
+}
+// No re-dibuja mientras se escribe en un campo del salón
+function slRender(){var a=document.activeElement;if(a&&a.id&&/^sl-/.test(a.id)&&a.tagName!=='BUTTON')return;render()}
+function slMesas(){var o=[];S.sl.cfg.sectores.forEach(function(s){(s.mesas||[]).forEach(function(m){o.push({sector:s,mesa:m})})});return o}
+function slFind(mid){return slMesas().find(function(x){return x.mesa.id===mid})}
+function slTotal(it){return (it||[]).reduce(function(a,x){return a+(Number(x.precio)||0)*(Number(x.cant)||0)},0)}
+function slHora(ts){if(!ts)return '';var d=new Date(ts);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+function slSaveCfg(patch){return slCfgRef().set(patch,{merge:true})}
+// Cambia una mesa de forma segura aunque haya varios celulares (transacción)
+function slMesaTx(mid,fn){
+  var ref=slMesRef();
+  return DB.runTransaction(function(tx){return tx.get(ref).then(function(sn){
+    var ab=(sn.exists&&sn.data().abiertas)||{};var cur=ab[mid]?JSON.parse(JSON.stringify(ab[mid])):null;
+    var nx=fn(cur);var o={};o[mid]=nx===null?firebase.firestore.FieldValue.delete():nx;
+    tx.set(ref,{abiertas:o},{merge:true});
+  })});
+}
+function slAbrir(mid){return slMesaTx(mid,function(cur){return cur||{desde:Date.now(),items:[]}})}
+function slAdd(mid,item){
+  return slMesaTx(mid,function(cur){
+    cur=cur||{desde:Date.now(),items:[]};
+    var ex=!item.socio&&cur.items.find(function(x){return x.pid===item.pid&&!x.socio});
+    if(ex)ex.cant=(Number(ex.cant)||0)+1;else cur.items.push(Object.assign({k:slId('i'),cant:1},item));
+    return cur;
+  });
+}
+function slCant(mid,k,d){return slMesaTx(mid,function(cur){if(!cur)return null;cur.items=cur.items.map(function(x){if(x.k===k)x.cant=(Number(x.cant)||0)+d;return x}).filter(function(x){return x.cant>0});return cur})}
+
+function tabMesas(){
+  var sl=S.sl,modos=[['salon','Salón'],['productos','Productos'],['editar','Sectores y mesas'],['ventas','Ventas de hoy']];
+  var head='<div class="sl-modos" role="tablist">'+modos.map(function(m){return '<button class="chip-b'+(sl.modo===m[0]&&!sl.mesa?' on':'')+'" data-sl-modo="'+m[0]+'">'+m[1]+'</button>'}).join('')+'</div>';
+  if(sl.ticket)return head+slTicketView(sl.ticket);
+  if(sl.mesa&&slFind(sl.mesa))return head+slMesaView(sl.mesa);
+  var body=sl.modo==='productos'?slProductos():sl.modo==='editar'?slEditar():sl.modo==='ventas'?slVentas():slSalon();
+  return '<div class="stack">'+head+body+'</div>';
+}
+function slSalon(){
+  var sl=S.sl,secs=sl.cfg.sectores;
+  if(!secs.length)return '<div class="empty">Todavía no armaste el salón. <button class="link" data-sl-modo="editar">Creá tus sectores y mesas</button> (por ejemplo Salón, Vereda y Barra) y después cargá tus <button class="link" data-sl-modo="productos">productos</button>.</div>';
+  if(!sl.sector||!secs.find(function(s){return s.id===sl.sector}))sl.sector=secs[0].id;
+  var sec=secs.find(function(s){return s.id===sl.sector});
+  var ab=sl.abiertas,ocup=slMesas().filter(function(x){return ab[x.mesa.id]}).length;
+  return '<div class="inline" style="justify-content:space-between;align-items:center"><div class="sl-secs">'+secs.map(function(s){var n=(s.mesas||[]).filter(function(m){return ab[m.id]}).length;return '<button class="tab" data-sl-sector="'+s.id+'" aria-selected="'+(s.id===sl.sector)+'">'+esc(s.nombre)+(n?' <span class="pill warn">'+n+'</span>':'')+'</button>'}).join('')+'</div>'+
+    '<span class="muted" style="font-size:14px">'+ocup+' de '+slMesas().length+' mesas ocupadas</span></div>'+
+    ((sec.mesas||[]).length?'<div class="sl-grid">'+sec.mesas.map(function(m){var a=ab[m.id];return '<button class="sl-mesa'+(a?' occ':'')+'" data-sl-mesa="'+m.id+'"><b>'+esc(m.nombre)+'</b>'+(a?'<span class="num">'+money(slTotal(a.items))+'</span><small>Abierta '+slHora(a.desde)+' · '+(a.items||[]).reduce(function(x,i){return x+i.cant},0)+' ítems</small>':'<small>Libre</small>')+'</button>'}).join('')+'</div>'
+      :'<div class="empty">Este sector no tiene mesas. <button class="link" data-sl-modo="editar">Agregá mesas</button>.</div>');
+}
+function slMesaView(mid){
+  var sl=S.sl,f=slFind(mid),a=sl.abiertas[mid],prods=sl.cfg.productos;
+  var cats=[];prods.forEach(function(p){var c=p.cat||'Otros';if(cats.indexOf(c)<0)cats.push(c)});
+  if(sl.pcat&&cats.indexOf(sl.pcat)<0)sl.pcat='';
+  var q=sl.pq.trim().toLowerCase();
+  var lista=prods.filter(function(p){return (!sl.pcat||(p.cat||'Otros')===sl.pcat)&&(!q||p.nombre.toLowerCase().indexOf(q)>=0)});
+  var items=(a&&a.items)||[],tot=slTotal(items);
+  var left='<div class="card stack"><div class="inline" style="justify-content:space-between;align-items:center"><div><span class="eyebrow">'+esc(f.sector.nombre)+'</span><h2 style="margin:0">'+esc(f.mesa.nombre)+'</h2></div>'+
+    (a?'<span class="pill warn">Abierta desde las '+slHora(a.desde)+'</span>':'<span class="pill ok">Libre</span>')+'</div>'+
+    (items.length?'<ul class="list sl-items">'+items.map(function(x){return '<li><span style="flex:1;min-width:0">'+esc(x.nombre)+(x.socio?' <span class="pill ok">Socio</span>':'')+'<br><small class="muted">'+(x.precio?money(x.precio)+' c/u':'Sin cargo')+'</small></span>'+
+      '<span class="sl-q"><button class="btn sm" data-sl-cant="'+x.k+'" data-d="-1" aria-label="Quitar uno">−</button><b class="num">'+x.cant+'</b><button class="btn sm" data-sl-cant="'+x.k+'" data-d="1" aria-label="Sumar uno"'+(x.socio?' disabled':'')+'>+</button></span><b class="num" style="min-width:84px;text-align:right">'+money(x.precio*x.cant)+'</b></li>'}).join('')+'</ul>'
+      :'<p class="muted">'+(a?'La mesa está abierta y todavía no tiene productos.':'Tocá un producto para abrir la mesa y cargarlo.')+'</p>')+
+    '<div class="sl-tot"><span>Total</span><b class="num">'+money(tot)+'</b></div>'+
+    (sl.cerrar===mid?slCerrarForm(tot):'<div class="inline">'+(a?'<button class="btn primary lg" data-sl-cerrar="'+mid+'"'+(items.length?'':' disabled')+'>Cerrar mesa y cobrar</button>':'<button class="btn primary" data-sl-abrir="'+mid+'">Abrir mesa</button>')+
+      (a&&!items.length?'<button class="btn" data-sl-liberar="'+mid+'">Liberar mesa</button>':'')+'<button class="link" data-sl-volver>Volver al salón</button></div>')+'</div>';
+  var right='<div class="card stack"><h3>Agregar productos</h3>'+
+    (prods.length?'<input class="inp" id="sl-pq" placeholder="Buscar producto" value="'+esc(sl.pq)+'" autocomplete="off">'+
+      (cats.length>1?'<div class="sl-secs">'+['']. concat(cats).map(function(c){return '<button class="chip-b'+(sl.pcat===c?' on':'')+'" data-sl-pcat="'+esc(c)+'">'+(c?esc(c):'Todos')+'</button>'}).join('')+'</div>':'')+
+      '<div class="sl-prods">'+(lista.length?lista.map(function(p){return '<button class="sl-prod" data-sl-add="'+p.id+'"><b>'+esc(p.nombre)+'</b><span class="num">'+money(p.precio)+'</span></button>'}).join(''):'<p class="muted">No hay productos con ese nombre.</p>')+'</div>'
+    :'<div class="empty">Cargá tu catálogo en <button class="link" data-sl-modo="productos">Productos</button> para poder sumarlos a la mesa.</div>')+'</div>';
+  return '<div class="split">'+left+right+'</div>';
+}
+function slCerrarForm(tot){
+  var c=S.sl.cerrarData||{tipo:'ticket',pago:'efectivo'};
+  return '<form id="sl-fcerrar" class="stack sl-cerrar" novalidate><h3>Cobrar '+money(tot)+'</h3>'+
+    '<div class="fgrid"><div class="field"><label class="lbl" for="sl-pago">Medio de pago</label><select class="inp" id="sl-pago">'+[['efectivo','Efectivo'],['debito','Tarjeta de débito'],['credito','Tarjeta de crédito'],['transferencia','Transferencia / QR'],['otro','Otro']].map(function(o){return '<option value="'+o[0]+'"'+(c.pago===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></div>'+
+    '<div class="field"><span class="lbl">Comprobante</span><div class="inline" style="gap:16px;align-items:center;min-height:42px"><label><input type="radio" name="sl-tipo" value="ticket"'+(c.tipo!=='factura'?' checked':'')+'> Ticket</label><label><input type="radio" name="sl-tipo" value="factura"'+(c.tipo==='factura'?' checked':'')+'> Factura</label></div></div></div>'+
+    '<div class="fgrid" id="sl-fact"'+(c.tipo==='factura'?'':' hidden')+'>'+
+      '<div class="field"><label class="lbl" for="sl-cn">Nombre o razón social</label><input class="inp" id="sl-cn"></div>'+
+      '<div class="field"><label class="lbl" for="sl-cd">CUIT o DNI</label><input class="inp" id="sl-cd" inputmode="numeric"></div>'+
+      '<div class="field"><label class="lbl" for="sl-ci">Condición frente al IVA</label><select class="inp" id="sl-ci"><option>Consumidor final</option><option>Responsable inscripto</option><option>Monotributista</option><option>Exento</option></select></div>'+
+      '<div class="field"><label class="lbl" for="sl-cdo">Domicilio (opcional)</label><input class="inp" id="sl-cdo"></div></div>'+
+    '<p class="ferr" id="sl-err"></p><div class="inline"><button class="btn primary lg" type="submit">Cobrar y emitir</button><button class="link" type="button" data-sl-nocerrar>Cancelar</button></div></form>';
+}
+function slProductos(){
+  var ps=S.sl.cfg.productos.slice().sort(function(a,b){return (a.cat||'').localeCompare(b.cat||'')||a.nombre.localeCompare(b.nombre)});
+  var e=S.sl.editP&&ps.find(function(p){return p.id===S.sl.editP});
+  return '<div class="split"><form id="sl-fprod" class="card stack" novalidate><h3>'+(e?'Editar producto':'Nuevo producto')+'</h3>'+
+    '<div class="field"><label class="lbl" for="sl-pn">Nombre</label><input class="inp" id="sl-pn" value="'+esc(e?e.nombre:'')+'" placeholder="Ej. Medialuna de manteca"></div>'+
+    '<div class="fgrid"><div class="field"><label class="lbl" for="sl-pp">Precio</label><input class="inp" id="sl-pp" type="number" min="0" step="1" inputmode="decimal" value="'+(e?e.precio:'')+'"></div>'+
+    '<div class="field"><label class="lbl" for="sl-pc">Categoría</label><input class="inp" id="sl-pc" list="sl-cats" value="'+esc(e?(e.cat||''):'Cafetería')+'"><datalist id="sl-cats">'+CAT_SUG.map(function(c){return '<option value="'+c+'">'}).join('')+'</datalist></div></div>'+
+    '<p class="ferr" id="sl-perr"></p><div class="inline"><button class="btn primary" type="submit">'+(e?'Guardar cambios':'Agregar producto')+'</button>'+(e?'<button class="link" type="button" data-sl-noedit>Cancelar</button>':'')+'</div>'+
+    (ps.length?'':'<div class="note">¿Arrancás de cero? <button class="link" type="button" data-sl-sugeridos>Cargar productos sugeridos</button> y después ajustá los precios.</div>')+
+    '</form><div class="card stack"><h3>Catálogo <span class="muted" style="font-weight:500">('+ps.length+')</span></h3>'+
+    (ps.length?'<ul class="list">'+ps.map(function(p){return '<li><span style="flex:1;min-width:0"><b>'+esc(p.nombre)+'</b><br><small class="muted">'+esc(p.cat||'Otros')+'</small></span><b class="num">'+money(p.precio)+'</b><span><button class="link" data-sl-editp="'+p.id+'">Editar</button> <button class="link" data-sl-delp="'+p.id+'" style="color:var(--bad)">Quitar</button></span></li>'}).join('')+'</ul>':'<p class="muted">Los productos que cargues aparecen acá y en cada mesa.</p>')+'</div></div>';
+}
+function slEditar(){
+  var secs=S.sl.cfg.sectores,ab=S.sl.abiertas;
+  return '<div class="stack"><form id="sl-fsec" class="card inline" novalidate style="align-items:end"><div class="field" style="flex:1;min-width:200px"><label class="lbl" for="sl-sn">Nuevo sector</label><input class="inp" id="sl-sn" placeholder="Ej. Salón, Vereda, Barra, Terraza"></div><button class="btn primary" type="submit">Agregar sector</button></form>'+
+    (secs.length?secs.map(function(s){return '<div class="card stack"><div class="inline" style="justify-content:space-between;align-items:center"><h3>'+esc(s.nombre)+' <span class="muted" style="font-weight:500">· '+(s.mesas||[]).length+' mesas</span></h3>'+
+      '<span class="inline"><button class="btn sm" data-sl-addm="'+s.id+'">+ Agregar mesa</button><button class="btn sm" data-sl-addm5="'+s.id+'">+ 5 mesas</button>'+
+      (S.sl.delSec===s.id?'<button class="btn sm danger" data-sl-delsec="'+s.id+'">Confirmar: quitar sector</button><button class="link" data-sl-nodel>No</button>':'<button class="link" data-sl-askdelsec="'+s.id+'" style="color:var(--bad)">Quitar sector</button>')+'</span></div>'+
+      ((s.mesas||[]).length?'<div class="sl-tags">'+s.mesas.map(function(m){return '<span class="sl-tag">'+esc(m.nombre)+(ab[m.id]?' <small class="muted">(abierta)</small>':' <button class="sl-x" data-sl-delm="'+m.id+'" data-sec="'+s.id+'" aria-label="Quitar '+esc(m.nombre)+'">×</button>')+'</span>'}).join('')+'</div>':'<p class="muted">Sin mesas todavía.</p>')+
+      '</div>'}).join(''):'<div class="empty">Agregá tu primer sector. Después sumale las mesas que tenga.</div>')+'</div>';
+}
+var PAGO_TXT={efectivo:'Efectivo',debito:'Débito',credito:'Crédito',transferencia:'Transferencia / QR',otro:'Otro'};
+function slVentas(){
+  var v=S.sl.ventas,tot=v.reduce(function(a,x){return a+(x.total||0)},0),porPago={};
+  v.forEach(function(x){porPago[x.pago]=(porPago[x.pago]||0)+(x.total||0)});
+  return '<div class="split"><div class="card stack"><h3>Comprobantes de hoy</h3>'+
+    (v.length?'<ul class="list">'+v.map(function(x){return '<li><span style="flex:1;min-width:0"><b>'+(x.tipo==='factura'?'Factura':'Ticket')+' N° '+String(x.n).padStart(6,'0')+'</b><br><small class="muted">'+slHora(x.ts)+' · '+esc(x.sector+' · '+x.mesa)+' · '+esc(PAGO_TXT[x.pago]||x.pago)+'</small></span><b class="num">'+money(x.total)+'</b><button class="link" data-sl-ver="'+x.id+'">Ver / imprimir</button></li>'}).join('')+'</ul>':'<p class="muted">Cuando cierres una mesa, el comprobante aparece acá.</p>')+'</div>'+
+    '<aside class="card"><span class="eyebrow">Hoy</span><div class="big-n num">'+money(tot)+'</div><p class="muted">'+v.length+' mesas cobradas</p>'+
+    (v.length?'<ul class="list" style="margin-top:12px">'+Object.keys(porPago).map(function(k){return '<li><span>'+esc(PAGO_TXT[k]||k)+'</span><b class="num">'+money(porPago[k])+'</b></li>'}).join('')+'</ul>':'')+'</aside></div>';
+}
+function slTicketHTML(t){
+  var c=S.cafe,f=new Date(t.ts);
+  var fecha=('0'+f.getDate()).slice(-2)+'/'+('0'+(f.getMonth()+1)).slice(-2)+'/'+f.getFullYear()+' '+slHora(t.ts);
+  return '<div class="tk"><div class="tk-c"><b class="tk-n">'+esc(c.nombre)+'</b>'+(c.direccion?'<div>'+esc(c.direccion)+(c.ciudad?' · '+esc(c.ciudad):'')+'</div>':'')+(c.telefono?'<div>Tel. '+esc(c.telefono)+'</div>':'')+(c.cuit?'<div>CUIT '+esc(c.cuit)+'</div>':'')+'</div>'+
+    '<div class="tk-l"></div><div class="tk-c"><b>'+(t.tipo==='factura'?'FACTURA':'TICKET')+' N° '+String(t.n).padStart(6,'0')+'</b><div>'+fecha+'</div><div>'+esc(t.sector+' · '+t.mesa)+'</div></div>'+
+    (t.tipo==='factura'&&t.cliente?'<div class="tk-l"></div><div><div>Cliente: '+esc(t.cliente.nombre||'Consumidor final')+'</div>'+(t.cliente.doc?'<div>CUIT/DNI: '+esc(t.cliente.doc)+'</div>':'')+'<div>IVA: '+esc(t.cliente.iva||'Consumidor final')+'</div>'+(t.cliente.dom?'<div>Domicilio: '+esc(t.cliente.dom)+'</div>':'')+'</div>':'')+
+    '<div class="tk-l"></div><table class="tk-t">'+t.items.map(function(x){return '<tr><td>'+x.cant+' x '+esc(x.nombre)+(x.socio?' (socio)':'')+'</td><td class="r">'+money(x.precio*x.cant)+'</td></tr>'}).join('')+'</table>'+
+    '<div class="tk-l"></div><table class="tk-t"><tr class="tk-tot"><td>TOTAL</td><td class="r">'+money(t.total)+'</td></tr><tr><td>Pago</td><td class="r">'+esc(PAGO_TXT[t.pago]||t.pago)+'</td></tr></table>'+
+    '<div class="tk-l"></div><div class="tk-c"><div>¡Gracias por tu visita!</div><small>Comprobante no válido como factura fiscal</small></div></div>';
+}
+function slTicketView(t){
+  return '<div class="sl-tkwrap"><div class="card">'+slTicketHTML(t)+'</div><div class="stack"><div class="done">✓ Mesa cobrada: '+money(t.total)+'</div><button class="btn primary lg" data-sl-print>Imprimir '+(t.tipo==='factura'?'factura':'ticket')+'</button><button class="btn" data-sl-volver>Volver al salón</button></div></div>';
+}
+function slPrint(t){
+  var p=$('#print-area');if(!p){p=document.createElement('div');p.id='print-area';document.body.appendChild(p)}
+  p.innerHTML=slTicketHTML(t);setTimeout(function(){window.print()},50);
+}
+function slCobrar(mid){
+  var sl=S.sl,f=slFind(mid);if(!f)return;
+  var tipo=(document.querySelector('input[name="sl-tipo"]:checked')||{}).value||'ticket',pago=$('#sl-pago').value;
+  var cliente=tipo==='factura'?{nombre:$('#sl-cn').value.trim(),doc:$('#sl-cd').value.trim(),iva:$('#sl-ci').value,dom:$('#sl-cdo').value.trim()}:null;
+  if(tipo==='factura'&&!cliente.nombre){$('#sl-err').textContent='Escribí el nombre o la razón social del cliente.';return}
+  var cfgRef=slCfgRef(),mesRef=slMesRef(),venRef=slVenCol().doc(),out=null;
+  DB.runTransaction(function(tx){return Promise.all([tx.get(cfgRef),tx.get(mesRef)]).then(function(r){
+    var n=((r[0].exists&&r[0].data().n)||0)+1,ab=(r[1].exists&&r[1].data().abiertas)||{},a=ab[mid];
+    if(!a||!(a.items||[]).length)throw new Error('vacia');
+    out={n:n,tipo:tipo,pago:pago,cliente:cliente,items:a.items,total:slTotal(a.items),mesa:f.mesa.nombre,sector:f.sector.nombre,mesaId:mid,desde:a.desde,ts:Date.now(),dia:hoyS(),por:S.user||''};
+    tx.set(cfgRef,{n:n},{merge:true});
+    var o={};o[mid]=firebase.firestore.FieldValue.delete();tx.set(mesRef,{abiertas:o},{merge:true});
+    tx.set(venRef,out);
+  })}).then(function(){sl.cerrar=null;sl.cerrarData=null;sl.mesa=null;sl.ticket=Object.assign({id:venRef.id},out);render();window.scrollTo(0,0);toast(tipo==='factura'?'Factura N° '+out.n+' emitida':'Ticket N° '+out.n+' emitido')},
+    function(er){toast(er&&er.message==='vacia'?'La mesa ya estaba cerrada.':'No se pudo cobrar. Probá de nuevo.',true)});
+}
+function slSugeridos(){
+  var c=S.cafe,P=function(n){return Number(n)||0};
+  var L=[['Café solo',P(c.precioCafe),'Cafetería'],['Café con leche',P(c.precioLeche),'Cafetería'],['Cortado',0,'Cafetería'],['Capuchino',0,'Cafetería'],['Té',0,'Cafetería'],['Submarino',0,'Cafetería'],['Medialuna',0,'Pastelería'],['Tostado de jamón y queso',0,'Salado'],['Tostadas con manteca y mermelada',0,'Salado'],['Agua mineral',0,'Bebidas'],['Gaseosa',0,'Bebidas'],['Jugo de naranja',0,'Bebidas']];
+  var ps=S.sl.cfg.productos.slice();L.forEach(function(x){if(!ps.find(function(p){return p.nombre.toLowerCase()===x[0].toLowerCase()}))ps.push({id:slId('p'),nombre:x[0],precio:x[1],cat:x[2]})});
+  slSaveCfg({productos:ps}).then(function(){toast('Productos sugeridos cargados. Revisá los precios.')},function(){toast('No se pudo guardar. Probá de nuevo.',true)});
+}
+// Canje del socio: elige en qué mesa se sienta
+function slCanjeSelect(){
+  var ms=slMesas();if(!ms.length)return '';
+  return '<div class="field"><label class="lbl" for="sl-canjemesa">¿En qué mesa se sienta?</label><select class="inp" id="sl-canjemesa"><option value="">Sin mesa (barra o para llevar)</option>'+
+    S.sl.cfg.sectores.map(function(s){return (s.mesas||[]).length?'<optgroup label="'+esc(s.nombre)+'">'+s.mesas.map(function(m){return '<option value="'+m.id+'"'+(S.sl.canjeMesa===m.id?' selected':'')+'>'+esc(m.nombre)+(S.sl.abiertas[m.id]?' · abierta':' · libre')+'</option>'}).join('')+'</optgroup>':''}).join('')+'</select></div>';
+}
+function slCanjeMesa(s){
+  var mid=S.sl.canjeMesa;if(!mid||!slFind(mid))return;
+  var f=slFind(mid);
+  slAdd(mid,{pid:'socio',nombre:PLAN[s.plan].prod+' · socio '+s.nombre,precio:0,socio:true}).then(function(){toast('Café de '+s.nombre+' cargado en '+f.mesa.nombre+' ('+f.sector.nombre+')')},function(){toast('El café quedó registrado, pero no se pudo cargar en la mesa.',true)});
+  S.sl.canjeMesa='';
+}
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-sl-modo],[data-sl-sector],[data-sl-mesa],[data-sl-abrir],[data-sl-liberar],[data-sl-volver],[data-sl-add],[data-sl-cant],[data-sl-pcat],[data-sl-cerrar],[data-sl-nocerrar],[data-sl-print],[data-sl-ver],[data-sl-editp],[data-sl-delp],[data-sl-noedit],[data-sl-sugeridos],[data-sl-addm],[data-sl-addm5],[data-sl-delm],[data-sl-askdelsec],[data-sl-delsec],[data-sl-nodel]');
+  if(!t||!S.cafeId)return;
+  var sl=S.sl,d=t.dataset,secs=JSON.parse(JSON.stringify(sl.cfg.sectores));
+  var err=function(){toast('No se pudo guardar. Probá de nuevo.',true)};
+  if(d.slModo){sl.modo=d.slModo;sl.mesa=null;sl.ticket=null;sl.cerrar=null;sl.editP=null;render();return}
+  if(d.slSector){sl.sector=d.slSector;render();return}
+  if(d.slMesa){sl.mesa=d.slMesa;sl.cerrar=null;sl.pq='';render();window.scrollTo(0,0);return}
+  if(t.hasAttribute('data-sl-volver')){sl.mesa=null;sl.ticket=null;sl.cerrar=null;sl.modo='salon';render();return}
+  if(d.slAbrir){slAbrir(d.slAbrir).catch(err);return}
+  if(d.slLiberar){slMesaTx(d.slLiberar,function(){return null}).catch(err);return}
+  if(d.slAdd){var p=sl.cfg.productos.find(function(x){return x.id===d.slAdd});if(p&&sl.mesa)slAdd(sl.mesa,{pid:p.id,nombre:p.nombre,precio:Number(p.precio)||0}).catch(err);return}
+  if(d.slCant){if(sl.mesa)slCant(sl.mesa,d.slCant,Number(d.d)).catch(err);return}
+  if(d.slPcat!==undefined){sl.pcat=d.slPcat;render();return}
+  if(d.slCerrar){sl.cerrar=d.slCerrar;sl.cerrarData={tipo:'ticket',pago:'efectivo'};render();return}
+  if(t.hasAttribute('data-sl-nocerrar')){sl.cerrar=null;render();return}
+  if(t.hasAttribute('data-sl-print')){if(sl.ticket)slPrint(sl.ticket);return}
+  if(d.slVer){var v=sl.ventas.find(function(x){return x.id===d.slVer});if(v){sl.ticket=v;render();window.scrollTo(0,0)}return}
+  if(d.slEditp){sl.editP=d.slEditp;render();var pn=$('#sl-pn');if(pn)pn.focus();return}
+  if(t.hasAttribute('data-sl-noedit')){sl.editP=null;render();return}
+  if(d.slDelp){slSaveCfg({productos:sl.cfg.productos.filter(function(x){return x.id!==d.slDelp})}).catch(err);return}
+  if(t.hasAttribute('data-sl-sugeridos')){slSugeridos();return}
+  if(d.slAddm||d.slAddm5){var sid=d.slAddm||d.slAddm5,s=secs.find(function(x){return x.id===sid});if(!s)return;s.mesas=s.mesas||[];
+    var nums=slMesas().map(function(x){var m=/^Mesa (\d+)$/.exec(x.mesa.nombre);return m?+m[1]:0}),nx=Math.max.apply(null,[0].concat(nums));
+    for(var i=0;i<(d.slAddm5?5:1);i++)s.mesas.push({id:slId('m'),nombre:'Mesa '+(++nx)});
+    slSaveCfg({sectores:secs}).catch(err);return}
+  if(d.slDelm){if(sl.abiertas[d.slDelm])return toast('Esa mesa está abierta. Cerrala antes de quitarla.',true);var s2=secs.find(function(x){return x.id===d.sec});if(!s2)return;s2.mesas=(s2.mesas||[]).filter(function(m){return m.id!==d.slDelm});slSaveCfg({sectores:secs}).catch(err);return}
+  if(d.slAskdelsec){var s3=secs.find(function(x){return x.id===d.slAskdelsec});if(s3&&(s3.mesas||[]).some(function(m){return sl.abiertas[m.id]}))return toast('Ese sector tiene mesas abiertas. Cerralas antes de quitarlo.',true);sl.delSec=d.slAskdelsec;render();return}
+  if(t.hasAttribute('data-sl-nodel')){sl.delSec=null;render();return}
+  if(d.slDelsec){sl.delSec=null;slSaveCfg({sectores:secs.filter(function(x){return x.id!==d.slDelsec})}).catch(err);return}
+});
+document.addEventListener('submit',function(e){
+  var id=e.target.id,sl=S.sl;if(!/^sl-f/.test(id)||!S.cafeId)return;e.preventDefault();
+  if(id==='sl-fsec'){var n=$('#sl-sn').value.trim();if(!n)return;if(sl.cfg.sectores.some(function(s){return s.nombre.toLowerCase()===n.toLowerCase()}))return toast('Ya tenés un sector con ese nombre.',true);
+    var secs=sl.cfg.sectores.concat([{id:slId('s'),nombre:n,mesas:[]}]);$('#sl-sn').value='';$('#sl-sn').blur();slSaveCfg({sectores:secs}).then(function(){toast('Sector '+n+' agregado')},function(){toast('No se pudo guardar. Probá de nuevo.',true)});return}
+  if(id==='sl-fprod'){var pn=$('#sl-pn').value.trim(),pp=$('#sl-pp').value,pc=$('#sl-pc').value.trim()||'Otros',pe=$('#sl-perr');
+    if(!pn){pe.textContent='Escribí el nombre del producto.';return}if(pp===''||Number(pp)<0){pe.textContent='Escribí el precio (0 si es sin cargo).';return}
+    var ps=sl.cfg.productos.slice(),ed=sl.editP;
+    if(ed)ps=ps.map(function(p){return p.id===ed?Object.assign({},p,{nombre:pn,precio:Number(pp),cat:pc}):p});else ps.push({id:slId('p'),nombre:pn,precio:Number(pp),cat:pc});
+    document.activeElement&&document.activeElement.blur();sl.editP=null;
+    slSaveCfg({productos:ps}).then(function(){toast(ed?'Producto actualizado':pn+' agregado al catálogo');render();var x=$('#sl-pn');if(x&&!ed)x.focus()},function(){toast('No se pudo guardar. Probá de nuevo.',true)});return}
+  if(id==='sl-fcerrar'){slCobrar(sl.cerrar);return}
+});
+document.addEventListener('input',function(e){
+  if(e.target.id==='sl-pq'){S.sl.pq=e.target.value;var pos=e.target.selectionStart;e.target.blur();render();var x=$('#sl-pq');if(x){x.focus();try{x.setSelectionRange(pos,pos)}catch(_){}}}
+});
+document.addEventListener('change',function(e){
+  if(e.target.name==='sl-tipo'){var fa=$('#sl-fact');if(fa)fa.hidden=e.target.value!=='factura';if(S.sl.cerrarData)S.sl.cerrarData.tipo=e.target.value}
+  if(e.target.id==='sl-pago'&&S.sl.cerrarData)S.sl.cerrarData.pago=e.target.value;
+  if(e.target.id==='sl-canjemesa')S.sl.canjeMesa=e.target.value;
+});
+
 /* ---------- eventos ---------- */
 document.addEventListener('click',function(e){
   var mp=e.target.closest('[data-png],[data-mpng],[data-mclear]');if(mp){
@@ -1076,7 +1341,8 @@ document.addEventListener('click',function(e){
   var sid=t.dataset.ren||(t.dataset.act&&S.sel);var s=sid&&S.socios.find(function(x){return x.id===sid});if(!s)return;
   if(t.dataset.act==='canje'){
     if(usoHoy(s))return;var u=(s.usos||[]).filter(function(x){return x>=addDays(hoyS(),-400)});u.push(hoyS());
-    saveSocio(Object.assign({},s,{usos:u})).then(function(){toast('Café registrado para '+s.nombre)},function(){toast('No se pudo registrar el café. Probá de nuevo.',true)});
+    var selM=$('#sl-canjemesa');S.sl.canjeMesa=selM?selM.value:'';
+    saveSocio(Object.assign({},s,{usos:u})).then(function(){toast('Café registrado para '+s.nombre);slCanjeMesa(s)},function(){toast('No se pudo registrar el café. Probá de nuevo.',true)});
   } else {
     saveSocio(Object.assign({},s,{pago:hoyS(),vence:addDays(hoyS(),DUR)})).then(function(){toast('Membresía renovada hasta '+fmtD(addDays(hoyS(),DUR-1)))},function(){toast('No se pudo renovar. Probá de nuevo.',true)});
   }
