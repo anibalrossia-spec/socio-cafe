@@ -319,7 +319,11 @@ var money=function(n){n=Number(n)||0;return '$ '+n.toLocaleString('es-AR')};
 var initials=function(n){return String(n||'?').trim().split(/\s+/).slice(0,2).map(function(w){return w[0]||''}).join('').toUpperCase()||'?'};
 var DUR=180;
 var PLAN={clasica:{nombre:'Clásica',prod:'Café solo'},premium:{nombre:'Premium',prod:'Café con leche'}};
-var LS='socio-cafe:local',THK='socio-cafe:fondo';
+var LS='socio-cafe:local',THK='socio-cafe:fondo',VK='socio-cafe:vista';
+// Recordar en qué pantalla estaba el usuario, para volver ahí al actualizar
+function vistaGet(){try{return JSON.parse(localStorage.getItem(VK))||null}catch(_){return null}}
+function vistaPut(o){try{if(o)localStorage.setItem(VK,JSON.stringify(o));else localStorage.removeItem(VK)}catch(_){}}
+function actualizarApp(){var go=function(){location.reload()};try{if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){navigator.serviceWorker.getRegistration().then(function(r){return r&&r.update()}).catch(function(){}).then(go);setTimeout(go,1500);return}}catch(_){}go()}
 function curTheme(){var t=document.documentElement.getAttribute('data-theme');if(t)return t;return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
 try{var _t=localStorage.getItem(THK);if(_t==='light'||_t==='dark')document.documentElement.setAttribute('data-theme',_t)}catch(_){}
 
@@ -350,7 +354,7 @@ function validarUsuario(u,p,p2){
   if(String(p||'').length<6)return 'La contraseña tiene que tener al menos 6 caracteres.';
   if(p!==p2)return 'Las contraseñas no coinciden.';
   return '';}
-function logout(){if(AUTH)AUTH.signOut();S.soporte=false;S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
+function logout(){vistaPut(null);S.restore=null;if(AUTH)AUTH.signOut();S.soporte=false;S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
 var SUP_USER='ventiungo',SUP_EMAIL='soporte@ventiungo.app';
 function esSoporteU(u){return !!(u&&u.email===SUP_EMAIL)}
 var SUP_RECOVERY='anibalrossia@gmail.com',WA_SUP='5493415628884';
@@ -434,7 +438,8 @@ function setActive(id){
   if(unsubCafe){unsubCafe();unsubCafe=null}if(unsubMiem){unsubMiem();unsubMiem=null}
   if(!id){S.cafe=null;S.mine=[];subSocios();render();return}
   unsubCafe=DB.doc('cafes/'+id).onSnapshot(function(sn){S.cafe=sn.exists?sn.data():null;S.mine=S.cafe?[Object.assign({id:id},S.cafe)]:[];
-    if(S.goHome&&S.cafe){S.goHome=false;S.view='home';window.scrollTo(0,0);toast('Sesión iniciada en '+S.cafe.nombre)}
+    if(S.restore&&S.cafe&&!S.goHome){S.view='panel';S.tab=S.restore.tab||'mostrador';S.restore=null}
+    if(S.goHome&&S.cafe){S.goHome=false;S.restore=null;S.view='home';window.scrollTo(0,0);toast('Sesión iniciada en '+S.cafe.nombre)}
     render()},function(){});
   unsubMiem=DB.collection('cafes/'+id+'/miembros').onSnapshot(function(q){S.miembros=q.docs.map(function(d){return Object.assign({uid:d.id},d.data())});render()},function(){});
   subSocios();
@@ -484,10 +489,11 @@ function boot(){
   firebase.initializeApp(cfg);
   DB=firebase.firestore();AUTH=firebase.auth();S.mode='db';
   watchDir();
+  S.restore=vistaGet();
   AUTH.onAuthStateChanged(function(u){
-    if(!u){S.uid=null;S.out=true;S.user='';setActive(null);render();return}
+    if(!u){S.restore=null;S.uid=null;S.out=true;S.user='';setActive(null);render();return}
     S.uid=u.uid;S.out=false;S.user=(u.email||'').replace(DOM_U,'').replace(/\.rst[a-z0-9]+$/,'');
-    if(esSoporteU(u)){S.soporte=true;S.user=SUP_USER;if(!S.cafeId){S.view='soporte';window.scrollTo(0,0)}render();return}
+    if(esSoporteU(u)){S.soporte=true;S.user=SUP_USER;if(S.restore&&S.restore.sop&&S.restore.cafeId&&!S.cafeId){setActive(S.restore.cafeId);render();return}if(!S.cafeId){S.view='soporte';window.scrollTo(0,0)}render();return}
     S.soporte=false;
     DB.doc('usuarios/'+u.uid).get().then(function(sn){
       var cid=sn.exists&&sn.data().cafeId;
@@ -822,7 +828,7 @@ function usoHoy(s){return (s.usos||[]).indexOf(hoyS())>=0}
 /* ---------- vistas ---------- */
 function header(){
   var right='';
-  if(S.view==='tienda'){
+  if(S.view==='tienda'&&!S.cafe&&!S.soporte){
     right=S.tiendaId?'<button class="btn sm" data-go="tienda">Volver a la tienda</button>':(esSocio()?'':'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>');
   } else if(S.soporte){
     right=(S.cafe&&S.view!=='panel'?'<button class="btn sm primary" data-go="panel">'+logoHTML(S.cafe,22)+' Panel de '+esc(S.cafe.nombre)+'</button>':'')+
@@ -835,7 +841,7 @@ function header(){
   } else {
     right=(S.view==='tienda'&&!S.tiendaId)?'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>':'<button class="btn sm" data-go="tienda">Volver a la tienda</button>';
   }
-  $('#top').innerHTML='<button class="brand" data-go="home" aria-label="VentiunGo, Socios Café, inicio">'+MARK+'<span class="bt"><b>Ventiun<span class="go">Go</span></b><small>Socios Café</small></span></button><div class="top-r">'+(typeof installBtn==='function'?installBtn():'')+'<div class="theme" role="group" aria-label="Color de fondo"><button data-th="light" aria-pressed="'+(curTheme()==='light')+'"><i></i>Blanco</button><button data-th="dark" aria-pressed="'+(curTheme()==='dark')+'"><i></i>Negro</button></div>'+right+'</div>';
+  $('#top').innerHTML='<button class="brand" data-go="home" aria-label="VentiunGo, Socios Café, inicio">'+MARK+'<span class="bt"><b>Ventiun<span class="go">Go</span></b><small>Socios Café</small></span></button><div class="top-r">'+(typeof installBtn==='function'?installBtn():'')+'<button class="btn sm" data-reload title="Actualizar la app" aria-label="Actualizar la app">↻ Actualizar</button><div class="theme" role="group" aria-label="Color de fondo"><button data-th="light" aria-pressed="'+(curTheme()==='light')+'"><i></i>Blanco</button><button data-th="dark" aria-pressed="'+(curTheme()==='dark')+'"><i></i>Negro</button></div>'+right+'</div>';
 }
 
 function periodo(s){
@@ -1047,6 +1053,7 @@ function tabCuenta(){
 
 function render(){
   header();
+  if(S.cafe&&S.cafeId&&S.view==='panel')vistaPut({tab:S.tab,cafeId:S.cafeId,sop:!!S.soporte});
   if((S.view==='panel'||S.view==='home')&&!S.cafe&&S.cafeId){header();$('#view').innerHTML='<p class="muted" style="padding:40px 0;text-align:center">Cargando tu cafetería…</p>';return}
   if(S.view==='home'&&!S.cafe){S.view='tienda';S.tiendaId=null}
   if((S.view==='acceso'||S.view==='registro')&&!S.cafe&&esSocio()){S.view='tienda';S.tiendaId=null}
@@ -1303,6 +1310,7 @@ document.addEventListener('change',function(e){
   if(e.target.id==='sl-canjemesa')S.sl.canjeMesa=e.target.value;
 });
 
+document.addEventListener('click',function(e){if(e.target.closest('[data-reload]'))actualizarApp()});
 /* ---------- eventos ---------- */
 document.addEventListener('click',function(e){
   var mp=e.target.closest('[data-png],[data-mpng],[data-mclear]');if(mp){
