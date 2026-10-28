@@ -311,21 +311,22 @@ window.VGSubs = (function () {
   var DAY = 864e5, TRIAL_DAYS = 60, WA_DEF = '5493415628884';
   // Igual que la sección "Planes y precios" de ventiungo.ar (los precios y descuentos se pueden cambiar desde soporte)
   var DEF = {
-    moneda: 'USD',
+    moneda: 'ARS',
     periodos: [{ id: 'mes', nombre: 'Mensual', meses: 1, desc: 0 }, { id: 'tri', nombre: 'Trimestral', meses: 3, desc: 10 }, { id: 'anio', nombre: 'Anual', meses: 12, desc: 25 }],
     funciones: ['Soporte especializado', 'Registro de ventas', 'Registro de gastos', 'Registro de inventarios', 'Módulo de estadísticas',
       'Descarga de comprobantes', 'Descarga de reportes', 'Gestión de clientes', 'Gestión de proveedores', 'Variación de productos', 'Control de deudas',
       'Creación de recetas', 'Uso desde el celular', 'Uso desde la computadora', 'Documento electrónico'],
     planes: [
-      { id: 'esencial', nombre: 'Esencial (App)', icono: '📱', base: 9.99, recomendado: false, cinta: '', no: ['Creación de recetas', 'Uso desde la computadora', 'Documento electrónico'] },
-      { id: 'pro', nombre: 'Pro (App + Web)', icono: '💻', base: 19.99, recomendado: true, cinta: 'Recomendado para emprendedores', no: ['Documento electrónico'] }
+      { id: 'esencial', nombre: 'Esencial (App)', icono: '📱', base: 15600, recomendado: false, cinta: '', no: ['Creación de recetas', 'Uso desde la computadora', 'Documento electrónico'] },
+      { id: 'pro', nombre: 'Pro (App + Web)', icono: '💻', base: 31200, recomendado: true, cinta: 'Recomendado para emprendedores', no: ['Documento electrónico'] }
     ]
   };
   var APPS = { peluquerias: 'VentiunGo Peluquerías', sociocafe: 'Socios Café' };
   var cur = null, cfg = null, cfgP = null, blockEl = null, pillEl = null, periodo = 'anio', elegido = '';
 
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function num(n) { return (Number(n) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function amt(n, mon) { var d = mon === 'ARS' ? 0 : 2; return (Math.round((Number(n) || 0) * (d ? 100 : 1)) / (d ? 100 : 1)).toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function perMes(mon) { return mon === 'ARS' ? '/mes' : mon + '/mes'; }
   function fdate(ms) { return ms ? new Date(ms).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }
   function tms(v) { if (!v) return 0; if (typeof v === 'number') return v; if (v.toMillis) return v.toMillis(); if (v.seconds) return v.seconds * 1000; var d = Date.parse(v); return isNaN(d) ? 0 : d; }
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } }
@@ -440,9 +441,9 @@ window.VGSubs = (function () {
       var mes = pl.base * (1 - p.desc / 100);
       return '<article class="vgs-p2' + (pl.recomendado ? ' rec' : '') + '">' + (pl.cinta ? '<div class="ribbon">' + h(pl.cinta) + '</div>' : '') +
         '<div class="in"><h3><span>' + pl.icono + '</span>' + h(pl.nombre) + '</h3>' +
-        '<div class="was">' + (p.desc ? '$ ' + num(pl.base) + ' ' + h(c.moneda) + '/mes' : '') + '</div>' +
-        '<div class="now">$ ' + num(mes) + ' <small>' + h(c.moneda) + '/mes</small></div>' +
-        '<div class="tot">' + (p.meses > 1 ? 'Total a pagar por ' + (p.meses === 12 ? 'año' : 'trimestre') + ': $ ' + num(mes * p.meses) : 'Se cobra mes a mes') + '</div>' +
+        '<div class="was">' + (p.desc ? '$ ' + amt(pl.base, c.moneda) + ' ' + h(perMes(c.moneda)) : '') + '</div>' +
+        '<div class="now">$ ' + amt(mes, c.moneda) + ' <small>' + h(perMes(c.moneda)) + '</small></div>' +
+        '<div class="tot">' + (p.meses > 1 ? 'Total a pagar por ' + (p.meses === 12 ? 'año' : 'trimestre') + ': $ ' + amt(mes * p.meses, c.moneda) : 'Se cobra mes a mes') + '</div>' +
         '<ul>' + c.funciones.map(function (f) { return pl.no.indexOf(f) >= 0 ? '<li class="no">No incluye ' + h(f.charAt(0).toLowerCase() + f.slice(1)) + '</li>' : '<li>' + h(f) + '</li>'; }).join('') + '</ul>' +
         '<button class="vgs-btn wide ' + (pl.recomendado ? 'accent' : '') + '" data-vgs-pay="' + pl.id + '">' + (c.links[pl.id + '_' + p.id] ? '💳 Pagar ' + h(p.nombre.toLowerCase()) : 'Elegir plan') + '</button></div></article>';
     }).join('');
@@ -611,7 +612,7 @@ window.VGSubs = (function () {
       var c = cat();
       var rows = c.planes.map(function (pl) {
         return '<div class="vgs-row" style="margin-bottom:8px"><b style="width:150px;font-size:14px">' + pl.icono + ' ' + h(pl.nombre) + '</b><label class="vgs-mut">Precio por mes</label>' +
-          '<input class="vgs-in" type="number" min="0" step="0.01" inputmode="decimal" style="width:110px" data-vgs-base="' + pl.id + '" value="' + pl.base + '"></div>';
+          '<input class="vgs-in" type="number" min="0" step="any" inputmode="decimal" style="width:120px" data-vgs-base="' + pl.id + '" value="' + pl.base + '"></div>';
       }).join('') + '<div class="vgs-row" style="margin:6px 0 4px">' + c.periodos.map(function (p) {
         return '<label class="vgs-mut">' + h(p.nombre) + ' −</label><input class="vgs-in" type="number" min="0" max="90" step="1" style="width:64px" data-vgs-desc="' + p.id + '" value="' + p.desc + '"' + (p.id === 'mes' ? ' disabled' : '') + '><span class="vgs-mut" style="margin-right:10px">%</span>';
       }).join('') + '</div>';
@@ -633,7 +634,7 @@ window.VGSubs = (function () {
         m.el.querySelectorAll('[data-vgs-base]').forEach(function (i) { var v = Number(i.value); if (!(v > 0)) bad = 'Revisá los precios: tienen que ser mayores a 0.'; planes[i.getAttribute('data-vgs-base')] = { base: Math.round(v * 100) / 100 }; });
         m.el.querySelectorAll('[data-vgs-desc]').forEach(function (i) { var v = Math.round(Number(i.value) || 0); if (v < 0 || v > 90) bad = 'Los descuentos tienen que estar entre 0 y 90%.'; periodos[i.getAttribute('data-vgs-desc')] = { desc: i.disabled ? 0 : v }; });
         m.el.querySelectorAll('[data-vgs-ln]').forEach(function (i) { var v = i.value.trim(); if (v && !/^https:\/\/\S+$/.test(v)) bad = 'Los links tienen que empezar con https://'; lk[i.getAttribute('data-vgs-ln')] = v; });
-        var mon = (m.el.querySelector('#vgs-mon').value || 'USD').trim().toUpperCase().slice(0, 5);
+        var mon = (m.el.querySelector('#vgs-mon').value || 'ARS').trim().toUpperCase().slice(0, 5);
         var w = m.el.querySelector('[data-vgs-wa]').value.replace(/\D/g, '');
         if (w && (w.length < 10 || w.length > 15)) bad = 'El WhatsApp tiene que tener entre 10 y 15 números, con código de país.';
         if (bad) { msg.className = 'vgs-msg err'; msg.textContent = bad; return; }
