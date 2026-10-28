@@ -306,6 +306,293 @@ p{margin:0}
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
+/* ===== VentiunGo · Suscripciones: 2 meses gratis, planes y cobro por Mercado Pago ===== */
+window.VGSubs = (function () {
+  var DAY = 864e5, TRIAL_DAYS = 60, WA_DEF = '5493415628884';
+  var PLANS = [{ k: 'mensual', n: 'Mensual', m: 1 }, { k: 'trimestral', n: 'Trimestral', m: 3 }, { k: 'anual', n: 'Anual', m: 12 }];
+  var APPS = { peluquerias: 'VentiunGo Peluquerías', sociocafe: 'Socios Café' };
+  var cur = null, cfg = null, cfgP = null, blockEl = null, pillEl = null;
+
+  function h(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function money(n) { return '$' + Math.round(Number(n) || 0).toLocaleString('es-AR'); }
+  function fdate(ms) { return ms ? new Date(ms).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }
+  function tms(v) { if (!v) return 0; if (typeof v === 'number') return v; if (v.toMillis) return v.toMillis(); if (v.seconds) return v.seconds * 1000; var d = Date.parse(v); return isNaN(d) ? 0 : d; }
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+  function addMonths(ms, m) { var d = new Date(ms); var day = d.getDate(); d.setMonth(d.getMonth() + m); if (d.getDate() < day) d.setDate(0); return d.getTime(); }
+  function ts(ms) { return firebase.firestore.Timestamp.fromMillis(ms); }
+  function isDark() {
+    var de = document.documentElement, t = de.getAttribute('data-theme');
+    if (de.classList.contains('vg-dark') || t === 'dark') return true;
+    if (t === 'light' || de.classList.contains('vg-light')) return false;
+    return !!(cur && cur.opts && cur.opts.app === 'sociocafe' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+
+  function css() {
+    if (document.getElementById('vgs-css')) return;
+    var s = document.createElement('style'); s.id = 'vgs-css';
+    s.textContent = [
+      '.vgs-ov{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.62);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 16px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}',
+      '.vgs-card{--bg:#fff;--fg:#0f172a;--mut:#64748b;--line:#e2e8f0;--soft:#f8fafc;--acc:#10b981;--acc2:#059669;background:var(--bg);color:var(--fg);border-radius:20px;max-width:760px;width:100%;margin:auto;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}',
+      '.vgs-dark .vgs-card,.vgs-card.vgs-dark{--bg:#15181d;--fg:#e2e8f0;--mut:#94a3b8;--line:#2a2f37;--soft:#0f1216}',
+      '.vgs-card h2{margin:0 0 4px;font-size:22px;line-height:1.2}.vgs-card p{margin:0}.vgs-mut{color:var(--mut);font-size:13.5px}',
+      '.vgs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:18px 0}',
+      '.vgs-plan{border:1.5px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px;background:var(--soft);position:relative}',
+      '.vgs-plan.best{border-color:var(--acc)}.vgs-tag{position:absolute;top:-10px;right:12px;background:var(--acc);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}',
+      '.vgs-plan b.vgs-name{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}.vgs-price{font-size:26px;font-weight:800;line-height:1.1}',
+      '.vgs-save{font-size:12.5px;font-weight:700;color:var(--acc2)}.vgs-dark .vgs-save{color:#34d399}',
+      '.vgs-btn{appearance:none;border:0;border-radius:12px;padding:11px 14px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;background:var(--acc);color:#fff;text-align:center;text-decoration:none;display:inline-block}',
+      '.vgs-btn:hover{background:var(--acc2)}.vgs-btn.sec{background:transparent;color:var(--fg);border:1.5px solid var(--line)}.vgs-btn.sec:hover{background:var(--soft)}',
+      '.vgs-btn.mp{background:#009ee3}.vgs-btn.mp:hover{background:#0084c4}.vgs-btn.sm{padding:7px 10px;font-size:13px}.vgs-btn.red{background:#e11d48}',
+      '.vgs-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.vgs-sep{border:0;border-top:1px solid var(--line);margin:16px 0}',
+      '.vgs-in{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;background:var(--bg);color:var(--fg);min-width:0}',
+      '.vgs-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;margin:12px 0}.vgs-kv span:nth-child(odd){color:var(--mut)}',
+      '.vgs-badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px}.vgs-b-prueba{background:#dbeafe;color:#1d4ed8}.vgs-b-activo{background:#d1fae5;color:#047857}.vgs-b-vencido{background:#ffe4e6;color:#be123c}.vgs-b-nuevo{background:#f1f5f9;color:#475569}',
+      '.vgs-pill{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));z-index:9990;background:#0f172a;color:#fff;border:0;border-radius:99px;padding:9px 16px;font:600 13px/1.2 system-ui,-apple-system,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer;max-width:calc(100vw - 32px)}',
+      '.vgs-pill b{color:#34d399}',
+      '.vgs-x{float:right;background:none;border:0;font-size:22px;line-height:1;color:var(--mut);cursor:pointer;padding:0 0 0 8px}',
+      '.vgs-msg{font-size:13px;margin-top:8px;min-height:1em}.vgs-msg.err{color:#e11d48}.vgs-msg.ok{color:var(--acc2)}',
+      '.vgs-tbl{width:100%;border-collapse:collapse;font-size:13px}.vgs-tbl td,.vgs-tbl th{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+  function modal(inner, opt) {
+    css(); opt = opt || {};
+    var ov = document.createElement('div'); ov.className = 'vgs-ov' + (isDark() ? ' vgs-dark' : '');
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    ov.innerHTML = '<div class="vgs-card">' + inner + '</div>';
+    if (!opt.blocking) ov.addEventListener('click', function (ev) { if (ev.target === ov || ev.target.closest('[data-vgs-close]')) close(); });
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); if (opt.onClose) opt.onClose(); }
+    return { el: ov, close: close, set: function (html) { ov.querySelector('.vgs-card').innerHTML = html; } };
+  }
+
+  // ---------- estado ----------
+  function compute(d) {
+    d = d || {};
+    var start = tms(d.trialStart) || Date.now();
+    var trialEnd = start + (TRIAL_DAYS + (Number(d.trialExtra) || 0)) * DAY;
+    var paid = tms(d.paidUntil), now = Date.now();
+    var state = paid > now ? 'activo' : trialEnd > now ? 'prueba' : 'vencido';
+    var end = state === 'activo' ? paid : trialEnd;
+    return { state: state, trialStart: start, trialEnd: trialEnd, paidUntil: paid, plan: d.plan || '', days: Math.max(0, Math.ceil((end - now) / DAY)), end: end, pagos: d.pagos || [] };
+  }
+  function plain(d) { var o = {}; for (var k in d) { if (k === 'pagos') continue; var v = d[k]; o[k] = (v && (v.toMillis || v.seconds)) ? tms(v) : v; } return o; }
+  function loadCfg(db, force) {
+    if (cfg && !force) return Promise.resolve(cfg);
+    if (cfgP && !force) return cfgP;
+    cfgP = db.collection('config').doc('planes').get().then(function (sn) { cfg = sn.exists ? sn.data() : {}; cfgP = null; return cfg; }, function () { cfgP = null; cfg = cfg || {}; return cfg; });
+    return cfgP;
+  }
+  function planCfg(app, k) { var a = (cfg && cfg.apps && cfg.apps[app]) || {}; return a[k] || {}; }
+  function waNum() { return String((cfg && cfg.whatsapp) || WA_DEF).replace(/\D/g, ''); }
+  function wa(text) { window.open('https://wa.me/' + waNum() + '?text=' + encodeURIComponent(text), '_blank'); }
+
+  // ---------- ventana de planes ----------
+  function plansHTML(o, st, blocking) {
+    var app = o.app, men = Number(planCfg(app, 'mensual').precio) || 0;
+    var head = blocking
+      ? '<h2>Terminó tu prueba gratis</h2><p class="vgs-mut">Para seguir usando ' + h(APPS[app]) + ' en <b>' + h(o.nombre) + '</b>, elegí un plan. Tus datos quedan guardados y la cuenta se habilita apenas se acredita el pago.</p>'
+      : '<button class="vgs-x" data-vgs-close aria-label="Cerrar">×</button><h2>Planes de ' + h(APPS[app]) + '</h2><p class="vgs-mut">' + (st && st.state === 'prueba' ? 'Te quedan <b>' + st.days + ' día' + (st.days === 1 ? '' : 's') + '</b> de prueba gratis (hasta el ' + fdate(st.trialEnd) + ').' : st && st.state === 'activo' ? 'Tu plan está activo hasta el <b>' + fdate(st.paidUntil) + '</b>. Podés renovarlo cuando quieras.' : '') + '</p>';
+    var cards = PLANS.map(function (p) {
+      var c = planCfg(app, p.k), pr = Number(c.precio) || 0;
+      var extra = '';
+      if (pr && p.m > 1) {
+        extra = '<span class="vgs-mut">Equivale a ' + money(pr / p.m) + ' por mes</span>';
+        if (men && men * p.m > pr) extra += '<span class="vgs-save">Ahorrás ' + money(men * p.m - pr) + '</span>';
+      }
+      return '<div class="vgs-plan' + (p.k === 'anual' ? ' best' : '') + '">' + (p.k === 'anual' ? '<span class="vgs-tag">Más conveniente</span>' : '') +
+        '<b class="vgs-name">' + p.n + '</b>' +
+        '<span class="vgs-price">' + (pr ? money(pr) : 'Consultar') + '</span>' +
+        '<span class="vgs-mut">' + (p.m === 1 ? 'por mes' : p.m === 3 ? 'por 3 meses' : 'por 12 meses') + '</span>' + extra +
+        '<button class="vgs-btn mp" data-vgs-pay="' + p.k + '" style="margin-top:auto">' + (c.link ? '💳 Pagar' : 'Pedir link de pago') + '</button></div>';
+    }).join('');
+    var loading = !cfg ? '<p class="vgs-mut" style="margin-top:12px">Cargando precios…</p>' : '';
+    return head + loading + '<div class="vgs-grid">' + cards + '</div>' +
+      '<p class="vgs-mut">Pagás con <b>Mercado Pago</b>: tarjeta de crédito, débito o dinero en cuenta. Se abre la página segura de Mercado Pago.</p>' +
+      '<hr class="vgs-sep"><div class="vgs-row">' +
+      '<button class="vgs-btn sec" data-vgs-paid>✅ Ya pagué: avisar por WhatsApp</button>' +
+      (blocking ? '<button class="vgs-btn sec" data-vgs-recheck>↻ Ya me activaron</button><button class="vgs-btn sec" data-vgs-logout>Cerrar sesión</button>' : '<button class="vgs-btn sec" data-vgs-close>Cerrar</button>') +
+      '</div><p class="vgs-msg" data-vgs-msg></p>';
+  }
+  function bindPlans(m, o, st, blocking) {
+    var el = m.el;
+    el.querySelectorAll('[data-vgs-pay]').forEach(function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-vgs-pay'), c = planCfg(o.app, k), p = PLANS.filter(function (x) { return x.k === k; })[0];
+        if (c.link && /^https?:\/\//.test(c.link)) { window.open(c.link, '_blank'); var msg = el.querySelector('[data-vgs-msg]'); if (msg) { msg.className = 'vgs-msg ok'; msg.textContent = 'Cuando termines de pagar, tocá "Ya pagué" para avisarnos y activamos tu cuenta.'; } }
+        else wa('Hola VentiunGo, quiero pagar el plan ' + p.n + ' de ' + APPS[o.app] + ' para ' + o.nombre + '. ¿Me pasan el link de pago?');
+      };
+    });
+    var pd = el.querySelector('[data-vgs-paid]'); if (pd) pd.onclick = function () { wa('Hola VentiunGo, ya pagué la suscripción de ' + APPS[o.app] + ' para ' + o.nombre + ' (código ' + o.sid + '). ¿Me activan la cuenta? Te mando el comprobante.'); };
+    var rc = el.querySelector('[data-vgs-recheck]'); if (rc) rc.onclick = function () {
+      var msg = el.querySelector('[data-vgs-msg]'); if (msg) { msg.className = 'vgs-msg'; msg.textContent = 'Revisando…'; }
+      o.db.collection('suscripciones').doc(o.sid).get().then(function (sn) { if (sn.exists) onData(sn.data()); if (cur && cur.st && cur.st.state === 'vencido' && msg) { msg.className = 'vgs-msg err'; msg.textContent = 'Todavía no figura el pago. Si ya pagaste, avisanos por WhatsApp.'; } }, function () { if (msg) { msg.className = 'vgs-msg err'; msg.textContent = 'No se pudo revisar. Probá de nuevo.'; } });
+    };
+    var lo = el.querySelector('[data-vgs-logout]'); if (lo) lo.onclick = function () { hideBlock(); if (o.onLogout) o.onLogout(); };
+  }
+  function showPlans(o, st, blocking) {
+    o = o || (cur && cur.opts); if (!o) return;
+    st = st || (cur && cur.st);
+    if (blocking && blockEl && document.body.contains(blockEl.el)) return;
+    var m = modal(plansHTML(o, st, blocking), { blocking: blocking });
+    if (blocking) { blockEl = m; document.documentElement.style.overflow = 'hidden'; }
+    bindPlans(m, o, st, blocking);
+    if (!cfg) loadCfg(o.db).then(function () { if (m.el.parentNode) { m.set(plansHTML(o, st, blocking)); bindPlans(m, o, st, blocking); } });
+    return m;
+  }
+  function hideBlock() { if (blockEl) { blockEl.close(); blockEl = null; document.documentElement.style.overflow = ''; } }
+  function pill(st) {
+    if (pillEl && pillEl.parentNode) pillEl.parentNode.removeChild(pillEl);
+    pillEl = null;
+    if (!st || st.state !== 'prueba' || st.days > 15) return;
+    css();
+    pillEl = document.createElement('button'); pillEl.type = 'button'; pillEl.className = 'vgs-pill';
+    pillEl.innerHTML = '🎁 Prueba gratis: quedan <b>' + st.days + ' día' + (st.days === 1 ? '' : 's') + '</b> · Ver planes';
+    pillEl.onclick = function () { showPlans(cur && cur.opts, cur && cur.st, false); };
+    document.body.appendChild(pillEl);
+  }
+  function apply() {
+    if (!cur || !cur.st) return;
+    if (cur.st.state === 'vencido') { pill(null); showPlans(cur.opts, cur.st, true); }
+    else { hideBlock(); pill(cur.st); }
+  }
+  function onData(d) {
+    if (!cur) return;
+    var p = plain(d); lsSet('vgs:' + cur.sid, p);
+    cur.st = compute(p); apply();
+  }
+
+  // Revisa la suscripción del local abierto (la crea la primera vez: ese día empieza la prueba gratis)
+  function guard(o) {
+    if (!o || !o.db || !o.sid) return;
+    if (cur && cur.sid === o.sid) { cur.opts = o; apply(); return; }
+    stop();
+    var my = cur = { sid: o.sid, opts: o, st: null, unsub: null };
+    var cached = lsGet('vgs:' + o.sid); if (cached) { my.st = compute(cached); apply(); }
+    var ref = o.db.collection('suscripciones').doc(o.sid);
+    loadCfg(o.db);
+    ref.get().then(function (sn) {
+      if (my !== cur) return;
+      if (sn.exists) return onData(sn.data());
+      return ref.set({ app: o.app, ref: o.sid, nombre: String(o.nombre || '').slice(0, 80), trialStart: firebase.firestore.FieldValue.serverTimestamp() })
+        .catch(function () {
+          // Sin permiso para crearla: la prueba se cuenta desde el primer día que se abrió en este dispositivo
+          var f = lsGet('vgs:first:' + o.sid) || Date.now(); lsSet('vgs:first:' + o.sid, f);
+          if (my === cur && !cached) onData({ trialStart: f });
+        });
+    }, function () {}).then(function () {
+      if (my !== cur) return;
+      try { my.unsub = ref.onSnapshot(function (sn) { if (sn.exists && my === cur) onData(sn.data()); }, function () {}); } catch (_) {}
+    });
+    var iv = setInterval(function () { if (my !== cur) return clearInterval(iv); if (my.st) { var c = lsGet('vgs:' + my.sid); if (c) { my.st = compute(c); apply(); } } }, 30 * 60 * 1000);
+  }
+  function stop() {
+    if (cur && cur.unsub) { try { cur.unsub(); } catch (_) {} }
+    cur = null; hideBlock(); pill(null);
+  }
+
+  // ---------- soporte ----------
+  function badge(d) {
+    if (!d) return '<span class="vgs-badge vgs-b-nuevo">Sin abrir</span>';
+    var st = compute(d);
+    if (st.state === 'activo') return '<span class="vgs-badge vgs-b-activo">Pagó hasta ' + fdate(st.paidUntil) + '</span>';
+    if (st.state === 'prueba') return '<span class="vgs-badge vgs-b-prueba">Prueba · ' + st.days + ' días</span>';
+    return '<span class="vgs-badge vgs-b-vencido">Vencido ' + fdate(st.trialEnd > st.paidUntil ? st.trialEnd : st.paidUntil) + '</span>';
+  }
+  function listAll(db, app) {
+    var q = db.collection('suscripciones'); if (app) q = q.where('app', '==', app);
+    return q.get().then(function (qs) { var m = {}; qs.forEach(function (d) { m[d.id] = d.data(); }); return m; });
+  }
+  function admin(o) {
+    css();
+    var ref = o.db.collection('suscripciones').doc(o.sid), data = null, m = null;
+    function render(msg, ok) {
+      var st = data ? compute(data) : null;
+      var pagos = (data && data.pagos || []).slice(-6).reverse();
+      var html = '<button class="vgs-x" data-vgs-close aria-label="Cerrar">×</button><h2>💳 Suscripción</h2><p class="vgs-mut">' + h(o.nombre) + ' · ' + h(APPS[o.app]) + '</p>' +
+        (st ? '<div class="vgs-kv"><span>Estado</span><span>' + badge(data) + '</span><span>Empezó la prueba</span><span>' + fdate(st.trialStart) + '</span><span>Fin de la prueba</span><span>' + fdate(st.trialEnd) + (Number(data.trialExtra) ? ' (+' + Number(data.trialExtra) + ' días extra)' : '') + '</span><span>Pagó hasta</span><span>' + (st.paidUntil ? fdate(st.paidUntil) + (st.plan ? ' · plan ' + h(st.plan) : '') : '—') + '</span></div>'
+          : '<p class="vgs-mut" style="margin:12px 0">Todavía no abrió la app con esta versión: la prueba gratis de 2 meses empieza la primera vez que entre. Igual podés registrar un pago.</p>') +
+        '<p style="font-weight:700;margin:6px 0">Registrar pago (suma desde el vencimiento o desde hoy)</p><div class="vgs-row">' +
+        PLANS.map(function (p) { return '<button class="vgs-btn sm" data-vgs-add="' + p.k + '">+ ' + p.n + '</button>'; }).join('') + '</div>' +
+        '<div class="vgs-row" style="margin-top:10px"><label class="vgs-mut" for="vgs-until">Pagó hasta</label><input id="vgs-until" type="date" class="vgs-in" value="' + (st && st.paidUntil ? new Date(st.paidUntil - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10) : '') + '"><button class="vgs-btn sm sec" data-vgs-setdate>Guardar fecha</button></div>' +
+        '<div class="vgs-row" style="margin-top:10px"><button class="vgs-btn sm sec" data-vgs-trial>+15 días de prueba</button>' + (st && st.paidUntil ? '<button class="vgs-btn sm sec" data-vgs-unpay>Quitar pago</button>' : '') + '<button class="vgs-btn sm sec" data-vgs-cfg>Precios y links de pago</button></div>' +
+        (pagos.length ? '<hr class="vgs-sep"><p style="font-weight:700;margin-bottom:6px">Últimos pagos registrados</p><table class="vgs-tbl"><tr><th>Fecha</th><th>Plan</th><th>Hasta</th></tr>' + pagos.map(function (x) { return '<tr><td>' + fdate(x.fecha) + '</td><td>' + h(x.plan || '') + '</td><td>' + fdate(x.hasta) + '</td></tr>'; }).join('') + '</table>' : '') +
+        '<p class="vgs-msg ' + (ok ? 'ok' : msg ? 'err' : '') + '">' + h(msg || '') + '</p>';
+      if (!m) m = modal(html); else m.set(html);
+      bind();
+    }
+    function base() { return { app: o.app, ref: o.sid, nombre: String(o.nombre || '').slice(0, 80) }; }
+    function save(patch, okMsg) {
+      var p = Object.assign(base(), patch);
+      if (!data || !data.trialStart) p.trialStart = firebase.firestore.FieldValue.serverTimestamp();
+      return ref.set(p, { merge: true }).then(function () { return ref.get(); }).then(function (sn) { data = sn.exists ? sn.data() : null; render(okMsg, true); if (o.onChange) o.onChange(); },
+        function (e) { render(/permission/.test((e && e.code) || '') ? 'Sin permiso: entrá con la cuenta de soporte.' : 'No se pudo guardar. Revisá la conexión.'); });
+    }
+    function bind() {
+      var el = m.el;
+      el.querySelectorAll('[data-vgs-add]').forEach(function (b) {
+        b.onclick = function () {
+          var p = PLANS.filter(function (x) { return x.k === b.getAttribute('data-vgs-add'); })[0];
+          var from = Math.max(Date.now(), data ? tms(data.paidUntil) : 0);
+          var until = addMonths(from, p.m);
+          if (!confirm('¿Registrar pago del plan ' + p.n + '? Queda activo hasta el ' + fdate(until) + '.')) return;
+          save({ paidUntil: ts(until), plan: p.k, pagos: firebase.firestore.FieldValue.arrayUnion({ fecha: Date.now(), plan: p.k, hasta: until }) }, 'Listo: activo hasta el ' + fdate(until) + '.');
+        };
+      });
+      var sd = el.querySelector('[data-vgs-setdate]'); if (sd) sd.onclick = function () {
+        var v = el.querySelector('#vgs-until').value; if (!v) return render('Elegí una fecha.');
+        var p = v.split('-'), until = new Date(+p[0], +p[1] - 1, +p[2], 23, 59).getTime();
+        save({ paidUntil: ts(until), pagos: firebase.firestore.FieldValue.arrayUnion({ fecha: Date.now(), plan: 'manual', hasta: until }) }, 'Listo: activo hasta el ' + fdate(until) + '.');
+      };
+      var tr = el.querySelector('[data-vgs-trial]'); if (tr) tr.onclick = function () { save({ trialExtra: (Number(data && data.trialExtra) || 0) + 15 }, 'Se sumaron 15 días de prueba.'); };
+      var up = el.querySelector('[data-vgs-unpay]'); if (up) up.onclick = function () { if (confirm('¿Quitar el pago? La cuenta vuelve al estado de la prueba (o vencida).')) save({ paidUntil: firebase.firestore.FieldValue.delete(), plan: firebase.firestore.FieldValue.delete() }, 'Pago quitado.'); };
+      var cf = el.querySelector('[data-vgs-cfg]'); if (cf) cf.onclick = function () { plansEditor(o.db); };
+    }
+    render('Cargando…', true);
+    ref.get().then(function (sn) { data = sn.exists ? sn.data() : null; render(); }, function () { render('No se pudo leer la suscripción.'); });
+  }
+  function plansEditor(db) {
+    css();
+    var m = modal('<p class="vgs-mut">Cargando…</p>');
+    loadCfg(db, true).then(function () {
+      var c = cfg || {};
+      var sec = Object.keys(APPS).map(function (app) {
+        return '<p style="font-weight:800;margin:14px 0 6px">' + h(APPS[app]) + '</p>' + PLANS.map(function (p) {
+          var x = ((c.apps || {})[app] || {})[p.k] || {};
+          return '<div class="vgs-row" style="margin-bottom:8px"><b style="width:86px;font-size:13px">' + p.n + '</b>' +
+            '<input class="vgs-in" type="number" min="0" step="100" inputmode="numeric" placeholder="Precio $" style="width:110px" data-vgs-pr="' + app + '.' + p.k + '" value="' + h(x.precio || '') + '">' +
+            '<input class="vgs-in" type="url" placeholder="Link de pago de Mercado Pago (https://mpago.la/...)" style="flex:1;min-width:200px" data-vgs-ln="' + app + '.' + p.k + '" value="' + h(x.link || '') + '"></div>';
+        }).join('');
+      }).join('');
+      m.set('<button class="vgs-x" data-vgs-close aria-label="Cerrar">×</button><h2>Precios y links de pago</h2>' +
+        '<p class="vgs-mut">En Mercado Pago entrá a <b>Cobrar → Link de pago</b>, creá un link por cada plan con su precio y pegalo acá. Esos links aceptan tarjeta de crédito, débito y dinero en cuenta. Si querés cobro automático todos los meses, podés crear una <b>Suscripción</b> en Mercado Pago y pegar ese link.</p>' +
+        sec + '<div class="vgs-row" style="margin-top:12px"><b style="width:86px;font-size:13px">WhatsApp</b><input class="vgs-in" type="tel" placeholder="5493415628884" style="width:200px" data-vgs-wa value="' + h(c.whatsapp || WA_DEF) + '"><span class="vgs-mut">donde te avisan que pagaron</span></div>' +
+        '<hr class="vgs-sep"><div class="vgs-row"><button class="vgs-btn" data-vgs-save>Guardar</button><button class="vgs-btn sec" data-vgs-close>Cancelar</button></div><p class="vgs-msg" data-vgs-msg></p>');
+      m.el.querySelector('[data-vgs-save]').onclick = function () {
+        var apps = {}, bad = '';
+        m.el.querySelectorAll('[data-vgs-pr]').forEach(function (i) {
+          var k = i.getAttribute('data-vgs-pr').split('.'), ln = m.el.querySelector('[data-vgs-ln="' + k[0] + '.' + k[1] + '"]').value.trim();
+          if (ln && !/^https:\/\/\S+$/.test(ln)) bad = 'El link de ' + APPS[k[0]] + ' · ' + k[1] + ' tiene que empezar con https://';
+          apps[k[0]] = apps[k[0]] || {}; apps[k[0]][k[1]] = { precio: Math.max(0, Math.round(Number(i.value) || 0)), link: ln };
+        });
+        var w = m.el.querySelector('[data-vgs-wa]').value.replace(/\D/g, '');
+        var msg = m.el.querySelector('[data-vgs-msg]');
+        if (bad) { msg.className = 'vgs-msg err'; msg.textContent = bad; return; }
+        if (w && (w.length < 10 || w.length > 15)) { msg.className = 'vgs-msg err'; msg.textContent = 'El WhatsApp tiene que tener entre 10 y 15 números, con código de país.'; return; }
+        msg.className = 'vgs-msg'; msg.textContent = 'Guardando…';
+        db.collection('config').doc('planes').set({ apps: apps, whatsapp: w || WA_DEF, updatedAt: Date.now() }, { merge: true }).then(function () {
+          cfg = Object.assign({}, cfg, { apps: apps, whatsapp: w || WA_DEF }); msg.className = 'vgs-msg ok'; msg.textContent = 'Guardado. Los clientes ya ven estos precios.';
+        }, function (e) { msg.className = 'vgs-msg err'; msg.textContent = /permission/.test((e && e.code) || '') ? 'Sin permiso: entrá con la cuenta de soporte.' : 'No se pudo guardar.'; });
+      };
+    });
+  }
+
+  return { guard: guard, stop: stop, showPlans: function () { if (cur) showPlans(cur.opts, cur.st, false); }, current: function () { return cur && cur.sid; }, state: function () { return cur && cur.st; },
+    admin: admin, plansEditor: plansEditor, badge: badge, listAll: listAll, compute: compute, TRIAL_DAYS: TRIAL_DAYS };
+})();
+</script>
+<script>
 (function(){
 'use strict';
 var $=function(s,r){return (r||document).querySelector(s)};
@@ -354,7 +641,7 @@ function validarUsuario(u,p,p2){
   if(String(p||'').length<6)return 'La contraseña tiene que tener al menos 6 caracteres.';
   if(p!==p2)return 'Las contraseñas no coinciden.';
   return '';}
-function logout(){vistaPut(null);S.restore=null;if(AUTH)AUTH.signOut();S.soporte=false;S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
+function logout(){if(window.VGSubs)VGSubs.stop();S.subs=null;S.subsAsked=false;vistaPut(null);S.restore=null;if(AUTH)AUTH.signOut();S.soporte=false;S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
 var SUP_USER='ventiungo',SUP_EMAIL='soporte@ventiungo.app';
 function esSoporteU(u){return !!(u&&u.email===SUP_EMAIL)}
 var SUP_RECOVERY='anibalrossia@gmail.com',WA_SUP='5493415628884';
@@ -405,9 +692,11 @@ function supCard(){
     '<div><button class="btn primary" type="submit">Guardar contraseña</button></div><p class="ferr" id="sup-err"></p></form></div>';
 }
 function viewSoporte(){
+  if(!S.subsAsked){S.subsAsked=true;setTimeout(loadSubs,0)}
   var l=(S.dirAll||[]).slice().sort(function(a,b){return String(a.nombre).localeCompare(String(b.nombre))});
   return '<section class="stack" style="gap:18px;max-width:640px;margin:0 auto;width:100%"><div class="sec-h"><span class="eyebrow">Soporte VentiunGo</span><h1 style="font-size:clamp(26px,4vw,36px)">Elegí una cafetería</h1><p class="muted">Entrás a su panel para ver y ayudar con lo que necesite.</p></div>'+
-    (l.length?'<div class="stack" style="gap:10px">'+l.map(function(c){return '<button class="card" data-sop="'+esc(c.id)+'" style="display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;width:100%">'+logoHTML(c,40)+'<span><b>'+esc(c.nombre)+'</b></span></button>'}).join('')+'</div>':'<p class="muted">Todavía no hay cafeterías registradas.</p>')+
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button class="btn" data-subplans>💳 Precios y links de pago</button><span class="muted" style="font-size:13px">Cada cafetería tiene 2 meses gratis; después ve los planes hasta que registres su pago con 💳.</span></div>'+
+    (l.length?'<div class="stack" style="gap:10px">'+l.map(function(c){var sd=S.subs?S.subs['sc-'+c.id]:undefined;return '<div style="display:flex;gap:8px;align-items:stretch"><button class="card" data-sop="'+esc(c.id)+'" style="display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;flex:1;min-width:0">'+logoHTML(c,40)+'<span style="min-width:0"><b>'+esc(c.nombre)+'</b><br>'+(S.subs?VGSubs.badge(sd):'<span class="muted" style="font-size:12px">…</span>')+'</span></button><button class="btn" data-subadm="'+esc(c.id)+'" title="Suscripción de '+esc(c.nombre)+'" aria-label="Suscripción de '+esc(c.nombre)+'">💳</button></div>'}).join('')+'</div>':'<p class="muted">Todavía no hay cafeterías registradas.</p>')+
     supCard()+'</section>';
 }
 function login(user,pass){
@@ -837,6 +1126,7 @@ function header(){
   } else if(S.cafe){
     right=(S.view!=='home'?'<button class="btn sm" data-go="home">Información del servicio</button>':'')+
       (S.view!=='panel'?'<button class="btn sm primary" data-go="panel">'+logoHTML(S.cafe,22)+' Mi panel</button>':'')+
+      '<button class="btn sm" data-miplan>💳 Mi plan</button>'+
       '<button class="btn sm danger" data-logout>Cerrar sesión</button>';
   } else {
     right=(S.view==='tienda'&&!S.tiendaId)?'<button class="btn sm primary" data-go="acceso">Soy cafetería</button>':'<button class="btn sm" data-go="tienda">Volver a la tienda</button>';
@@ -1051,8 +1341,15 @@ function tabCuenta(){
     '<aside class="stack"><span class="eyebrow">Tarjeta de tus socios</span>'+membCard(c,true)+'</aside></div>';
 }
 
+function subsHook(){
+  if(!window.VGSubs||!DB)return;
+  if(S.cafe&&S.cafeId&&!S.soporte&&S.uid){var sid='sc-'+S.cafeId;if(VGSubs.current()!==sid)VGSubs.guard({db:DB,app:'sociocafe',sid:sid,nombre:S.cafe.nombre,onLogout:logout})}
+  else if(VGSubs.current())VGSubs.stop();
+}
+function loadSubs(){if(!S.soporte||!DB)return;VGSubs.listAll(DB,'sociocafe').then(function(m){S.subs=m;if(S.view==='soporte')render()},function(){})}
 function render(){
   header();
+  subsHook();
   if(S.cafe&&S.cafeId&&S.view==='panel')vistaPut({tab:S.tab,cafeId:S.cafeId,sop:!!S.soporte});
   if((S.view==='panel'||S.view==='home')&&!S.cafe&&S.cafeId){header();$('#view').innerHTML='<p class="muted" style="padding:40px 0;text-align:center">Cargando tu cafetería…</p>';return}
   if(S.view==='home'&&!S.cafe){S.view='tienda';S.tiendaId=null}
@@ -1325,6 +1622,9 @@ document.addEventListener('click',function(e){
   var rsu=e.target.closest('[data-resetu]');if(rsu&&S.soporte){S.resetU=rsu.dataset.resetu;render();var f1=$('#ru-1');if(f1)f1.focus();return}
   if(e.target.closest('[data-resetcancel]')){S.resetU=null;render();return}
   if(e.target.closest('[data-suplink]')){var cu=AUTH&&AUTH.currentUser;if(!cu)return;cu.verifyBeforeUpdateEmail(SUP_RECOVERY).then(function(){toast('Te mandamos un email a '+SUP_RECOVERY+': abrilo y confirmá con el enlace')},function(er){toast(/recent-login/.test(er&&er.code||'')?'Cerrá sesión, volvé a entrar como Ventiungo y probá de nuevo.':/already-in-use/.test(er&&er.code||'')?'Ese email ya lo usa otra cuenta.':'No se pudo vincular. Probá de nuevo.',true)});return}
+  var sad=e.target.closest('[data-subadm]');if(sad&&S.soporte){var sc=(S.dirAll||[]).find(function(c){return c.id===sad.dataset.subadm});VGSubs.admin({db:DB,app:'sociocafe',sid:'sc-'+sad.dataset.subadm,nombre:sc?sc.nombre:'',onChange:loadSubs});return}
+  if(e.target.closest('[data-subplans]')&&S.soporte){VGSubs.plansEditor(DB);return}
+  if(e.target.closest('[data-miplan]')){VGSubs.showPlans();return}
   var sop=e.target.closest('[data-sop]');if(sop&&S.soporte){S.goHome=false;S.cafe=null;setActive(null);setActive(sop.dataset.sop);S.view='panel';render();window.scrollTo(0,0);return}
   var qu=e.target.closest('[data-quitaru]');if(qu){quitarUsuario(S.cafeId,qu.dataset.quitaru);return}
   var rb=e.target.closest('[data-rol]');if(rb){S.rol=rb.dataset.rol;render();return}
