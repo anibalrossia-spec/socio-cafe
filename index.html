@@ -296,6 +296,100 @@ p{margin:0}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* VentiunGo · Excel (.xlsx) sin librerías externas */
+(function(){
+  var CRC=null;
+  function crc32(b){
+    if(!CRC){CRC=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;CRC[n]=c>>>0;}}
+    var x=0xFFFFFFFF;for(var i=0;i<b.length;i++)x=CRC[(x^b[i])&255]^(x>>>8);return (x^0xFFFFFFFF)>>>0;
+  }
+  function u8(s){return new TextEncoder().encode(s)}
+  function zip(files){
+    var parts=[],central=[],off=0,now=new Date();
+    var dt=((now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1))&0xFFFF,dd=(((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate())&0xFFFF;
+    files.forEach(function(f){
+      var name=u8(f[0]),data=u8(f[1]),crc=crc32(data);
+      var h=new DataView(new ArrayBuffer(30));
+      h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);
+      h.setUint16(10,dt,true);h.setUint16(12,dd,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);
+      h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+      parts.push(new Uint8Array(h.buffer),name,data);
+      var c=new DataView(new ArrayBuffer(46));
+      c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);
+      c.setUint16(12,dt,true);c.setUint16(14,dd,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);
+      c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+      central.push(new Uint8Array(c.buffer),name);
+      off+=30+name.length+data.length;
+    });
+    var csize=central.reduce(function(a,p){return a+p.length},0);
+    var e=new DataView(new ArrayBuffer(22));
+    e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csize,true);e.setUint32(16,off,true);
+    return new Blob(parts.concat(central,[new Uint8Array(e.buffer)]),{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheetml.sheet'});
+  }
+  function xe(s){return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  function col(i){var s='';i++;while(i){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26}return s}
+  // sheets: [{name, title, headers:[...], rows:[[...]], money:[colIdx], widths:[...]}]
+  function build(sheets){
+    var files=[],wbs='',rels='',ct='';
+    sheets.forEach(function(sh,si){
+      var n=si+1,hasTitle=!!sh.title,hr=hasTitle?3:1,rowsXml='',maxLen=sh.headers.map(function(h){return String(h).length});
+      if(hasTitle){
+        rowsXml+='<row r="1"><c r="A1" t="inlineStr" s="3"><is><t>'+xe(sh.title)+'</t></is></c></row>';
+        if(sh.subtitle)rowsXml+='<row r="2"><c r="A2" t="inlineStr" s="4"><is><t>'+xe(sh.subtitle)+'</t></is></c></row>';
+      }
+      rowsXml+='<row r="'+hr+'">'+sh.headers.map(function(h,i){return '<c r="'+col(i)+hr+'" t="inlineStr" s="1"><is><t>'+xe(h)+'</t></is></c>'}).join('')+'</row>';
+      sh.rows.forEach(function(r,ri){
+        var rn=hr+1+ri;
+        rowsXml+='<row r="'+rn+'">'+r.map(function(v,i){
+          var ref=col(i)+rn;
+          if(v===null||v===undefined||v==='')return '';
+          if(typeof v==='number'&&isFinite(v)){var s=(sh.money||[]).indexOf(i)>=0?' s="2"':'';maxLen[i]=Math.max(maxLen[i],String(Math.round(v)).length+3);return '<c r="'+ref+'"'+s+'><v>'+v+'</v></c>'}
+          var t=String(v);maxLen[i]=Math.max(maxLen[i],t.length);
+          return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xe(t)+'</t></is></c>';
+        }).join('')+'</row>';
+      });
+      var last=col(sh.headers.length-1)+(hr+Math.max(sh.rows.length,0));
+      var cols='<cols>'+maxLen.map(function(l,i){var w=(sh.widths&&sh.widths[i])||Math.min(Math.max(l+3,9),48);return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'}).join('')+'</cols>';
+      var xml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+        '<sheetViews><sheetView workbookViewId="0"><pane ySplit="'+hr+'" topLeftCell="A'+(hr+1)+'" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'+
+        cols+'<sheetData>'+rowsXml+'</sheetData>'+(sh.rows.length?'<autoFilter ref="A'+hr+':'+last+'"/>':'')+'</worksheet>';
+      files.push(['xl/worksheets/sheet'+n+'.xml',xml]);
+      var nm=String(sh.name||('Hoja'+n)).replace(/[\\\/?*\[\]:]/g,' ').slice(0,31);
+      wbs+='<sheet name="'+xe(nm)+'" sheetId="'+n+'" r:id="rId'+n+'"/>';
+      rels+='<Relationship Id="rId'+n+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+n+'.xml"/>';
+      ct+='<Override PartName="/xl/worksheets/sheet'+n+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+    });
+    var ns=sheets.length+1;
+    rels+='<Relationship Id="rId'+ns+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+    files.unshift(
+      ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+ct+'</Types>'],
+      ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+      ['xl/workbook.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+wbs+'</sheets>'+
+        sheets.map(function(sh,si){var hr=sh.title?3:1;return sh.rows.length?'<definedName name="_xlnm._FilterDatabase" localSheetId="'+si+'" hidden="1">\''+xe(String(sh.name||('Hoja'+(si+1))).replace(/[\\\/?*\[\]:]/g,' ').slice(0,31))+'\'!$A$'+hr+':$'+col(sh.headers.length-1)+'$'+(hr+sh.rows.length)+'</definedName>':''}).join('').replace(/^(.+)$/,'<definedNames>$1</definedNames>')+
+        '</workbook>'],
+      ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'</Relationships>'],
+      ['xl/styles.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+        '<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;$&quot; #,##0"/></numFmts>'+
+        '<fonts count="4"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><sz val="10"/><color rgb="FF64748B"/><name val="Calibri"/></font></fonts>'+
+        '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF10B981"/><bgColor indexed="64"/></patternFill></fill></fills>'+
+        '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'+
+        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+        '<cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>'+
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>']
+    );
+    return zip(files);
+  }
+  function download(filename,sheets){
+    var blob=build(sheets),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();
+    setTimeout(function(){a.remove();URL.revokeObjectURL(url)},1500);
+    return blob;
+  }
+  function fname(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'socios'}
+  window.VGXlsx={build:build,download:download,fname:fname};
+})();
+</script>
 <script src="config.js"></script>
 </head>
 <body>
@@ -1365,9 +1459,29 @@ function tabSoySocio(){
     '<p class="ferr">'+esc(M.lerr||'')+'</p><div><button class="btn primary lg" type="submit">Ver mi tarjeta</button></div>'+
   '</form><aside class="preview-side"><span class="eyebrow">Así se ve</span>'+membCard(c,true)+'</aside></section>';
 }
+function exportSociosXlsx(){
+  if(!window.VGXlsx||!S.socios.length)return;
+  var c=S.cafe||{},h=hoyS();
+  var rows=S.socios.slice().sort(function(a,b){return (a.nombre||'').localeCompare(b.nombre||'')}).map(function(s){
+    var vg=vigencia(s),p=periodo(s),u=(s.usos||[]).slice().sort();
+    var precio=s.plan==='premium'?c.precioPremium:c.precioClasica;
+    var fin=s.pago?addDays(s.pago,DUR-1):(s.vence?addDays(s.vence,-1):'');
+    return [s.nombre||'',s.telefono||'',PLAN[s.plan]?PLAN[s.plan].nombre:(s.plan||''),PLAN[s.plan]?PLAN[s.plan].prod:'',precio?Number(precio):'',
+      s.pago?fmtD(s.pago):'',fin?fmtD(fin):'',vg.cls==='bad'?'Vencida':vg.cls==='warn'?'Por vencer':'Vigente',
+      p.used,Math.max(0,p.rest),u.length?fmtD(u[u.length-1]):'',usoHoy(s)?'Sí':'No',s.codigo||''];
+  });
+  var nombre=c.nombre||'Socio Café';
+  VGXlsx.download('Socios-'+VGXlsx.fname(nombre)+'-'+h.replace(/-/g,'')+'.xlsx',[{
+    name:'Socios',title:'Socios de '+nombre,
+    subtitle:'Descargado el '+fmtD(h)+' · '+rows.length+' socios',
+    headers:['Nombre y apellido','Teléfono','Plan','Incluye','Precio del plan','Pagó el','Vence el','Estado','Cafés usados (período)','Días que le quedan','Último café','Tomó hoy','Código de tarjeta'],
+    rows:rows,money:[4]
+  }]);
+  toast('Excel descargado: '+rows.length+' socios');
+}
 function tabSocios(){
   var rows=S.socios.slice().sort(function(a,b){return (a.nombre||'').localeCompare(b.nombre||'')});
-  return '<div class="stack"><form id="f-socio" class="card stack" novalidate><h3>Nuevo socio</h3><div class="fgrid">'+
+  return '<div class="stack">'+(rows.length?'<div class="card" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0">Tus socios</h3><span class="muted" style="font-size:13px">'+rows.length+' socios · '+rows.filter(function(s){return vigencia(s).cls!=='bad'}).length+' con membresía vigente</span></div><button class="btn" type="button" data-xlsx>⬇ Descargar Excel</button></div>':'')+'<form id="f-socio" class="card stack" novalidate><h3>Nuevo socio</h3><div class="fgrid">'+
     '<div class="field"><label class="lbl" for="s-n">Nombre y apellido</label><input class="inp" id="s-n" required></div>'+
     '<div class="field"><label class="lbl" for="s-t">Teléfono</label><input class="inp" id="s-t" inputmode="tel"></div>'+
     '<div class="field"><label class="lbl" for="s-p">Plan</label><select class="inp" id="s-p"><option value="clasica">Clásica · café solo'+(S.cafe.precioClasica?' · '+money(S.cafe.precioClasica):'')+'</option><option value="premium">Premium · café con leche'+(S.cafe.precioPremium?' · '+money(S.cafe.precioPremium):'')+'</option></select></div>'+
@@ -1669,6 +1783,7 @@ document.addEventListener('change',function(e){
 document.addEventListener('click',function(e){if(e.target.closest('[data-reload]'))actualizarApp()});
 /* ---------- eventos ---------- */
 document.addEventListener('click',function(e){
+  if(e.target.closest('[data-xlsx]')){exportSociosXlsx();return}
   var mp=e.target.closest('[data-png],[data-mpng],[data-mclear]');if(mp){
     if(S.view==='tienda'){if(mp.hasAttribute('data-mclear'))salirSocio();else if(mp.hasAttribute('data-mpng'))savePNG(S.member.cafeData,S.member.card);return}
     if(mp.hasAttribute('data-mclear')&&S.view==='panel'){S.member.lcode=null;S.member.lcodeIn='';S.member.lerr='';render();return}
