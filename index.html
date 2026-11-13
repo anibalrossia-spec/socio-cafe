@@ -986,16 +986,23 @@ function subSocios(){
   if(unsubS){unsubS();unsubS=null}
   S.socios=[];S.sel=null;
   if(!S.cafeId)return;
-  unsubS=socioCol().onSnapshot(function(q){S.socios=q.docs.map(function(d){return Object.assign({id:d.id},d.data())});render()},function(){});
+  unsubS=socioCol().onSnapshot(function(q){S.socios=q.docs.map(function(d){return Object.assign({id:d.id},d.data())});render();syncTel()},function(){});
 }
+function telKey(t){var d=String(t||'').replace(/\D/g,'');return d.length>=8?'tel-'+d.slice(-10):''}
+function telPut(cid,s){var k=telKey(s.telefono);if(!k||!s.codigo||!DB)return Promise.resolve();return DB.doc('tarjetas/'+k).set({cafeId:cid,codigo:s.codigo}).catch(function(){})}
+function syncTel(){if(!S.cafeId||!DB)return;var done=S._telDone||(S._telDone={});S.socios.forEach(function(z){var k=telKey(z.telefono);if(k&&z.codigo&&done[z.id]!==k){done[z.id]=k;telPut(S.cafeId,z)}})}
 function saveSocio(s){
   if(!s.codigo)s.codigo=newCode();
   var d=Object.assign({},s);delete d.id;var cid=S.cafeId;
-  return socioCol().doc(s.id).set(d).then(function(){return DB.doc(tPath(cid,s.codigo)).set({cafeId:cid,nombre:s.nombre,plan:s.plan,pago:s.pago||'',vence:s.vence||'',usos:s.usos||[]})});
+  var prev=S.socios.find(function(z){return z.id===s.id}),ok=prev&&telKey(prev.telefono);
+  return socioCol().doc(s.id).set(d).then(function(){return DB.doc(tPath(cid,s.codigo)).set({cafeId:cid,nombre:s.nombre,plan:s.plan,pago:s.pago||'',vence:s.vence||'',usos:s.usos||[]})}).then(function(){
+    if(ok&&ok!==telKey(s.telefono))DB.doc('tarjetas/'+ok).delete().catch(function(){});
+    if(S._telDone)S._telDone[s.id]=telKey(s.telefono);
+    return telPut(cid,s)});
 }
 function delSocio(id){
   var x=S.socios.find(function(z){return z.id===id}),cid=S.cafeId;
-  return socioCol().doc(id).delete().then(function(){if(x&&x.codigo)return DB.doc(tPath(cid,x.codigo)).delete().catch(function(){})});
+  return socioCol().doc(id).delete().then(function(){if(x&&telKey(x.telefono))DB.doc('tarjetas/'+telKey(x.telefono)).delete().catch(function(){});if(x&&x.codigo)return DB.doc(tPath(cid,x.codigo)).delete().catch(function(){})});
 }
 function boot(){
   var cfg=window.SOCIO_CAFE_FIREBASE;
@@ -1242,6 +1249,14 @@ function cafeCard(){
     '<p class="ferr">'+esc(S.loginErr||'')+'</p><div><button class="btn primary" type="submit" '+(S.loginBusy||!AUTH?'disabled':'')+'>'+(S.loginBusy?'Entrando…':'Iniciar sesión')+'</button><button type="button" class="link" data-olvide style="margin-left:14px">¿Olvidaste tu contraseña?</button></div></form>'+
     '<div style="padding-top:6px;border-top:1px solid var(--line)"><p class="muted" style="font-size:14px;margin-bottom:8px">¿Todavía no tenés usuario o es otra cafetería?</p><button class="btn" data-newcafe>Crear cuenta nueva</button></div>';
 }
+function buscarTel(t){
+  var M=S.member,k=telKey(t);M.err='';M.busy=true;render();
+  if(!DB){M.busy=false;M.err='La aplicación todavía no está configurada.';render();return}
+  DB.doc('tarjetas/'+k).get().then(function(sn){
+    if(!sn.exists||!sn.data().codigo){M.busy=false;M.err='No encontramos un socio con ese celular. Revisalo o pedile a tu cafetería que lo cargue.';render();return}
+    buscarSocio(sn.data().codigo);
+  },function(){M.busy=false;M.err='No se pudo buscar. Revisá tu conexión y probá de nuevo.';render()});
+}
 function buscarSocio(code){
   var M=S.member;M.err='';M.busy=true;render();
   if(!DB){M.busy=false;M.err='La aplicación todavía no está configurada.';render();return}
@@ -1258,8 +1273,8 @@ function viewTiendaGeneral(){
   var socio=(M.card&&M.cafeData)
     ?'<section class="sec"><div class="sec-h"><span class="eyebrow">Mi tarjeta</span><h2>Tu consumo en '+esc(M.cafeData.nombre)+'</h2></div>'+viewSocioCard(M.cafeData,M.card)+'</section>'
     :'<section class="card acc"><div class="stack"><span class="eyebrow">Soy socio</span><h2>Mirá tu tarjeta de consumo</h2>'+
-      '<p class="muted">Escribí tu número de socio y vas a ver los cafés que tomaste, los días que te quedan y el vencimiento de tu membresía.</p></div>'+
-      '<form id="f-num" class="stack" novalidate><div class="field"><label class="lbl" for="n-code">Número de socio</label><input class="inp xl mono" id="n-code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="Ej. K7P2QX" value="'+esc(M.code||'')+'" style="letter-spacing:.2em;text-transform:uppercase"><span class="help">Son 6 letras y números. Te lo dan en el mostrador al asociarte.</span></div>'+
+      '<p class="muted">Escribí tu número de celular y vas a ver los cafés que tomaste, los días que te quedan y el vencimiento de tu membresía.</p></div>'+
+      '<form id="f-num" class="stack" novalidate><div class="field"><label class="lbl" for="n-code">Tu número de celular</label><input class="inp xl mono" id="n-code" maxlength="20" autocomplete="tel" inputmode="tel" placeholder="Ej. 341 562 8884" value="'+esc(M.tel||'')+'" style="letter-spacing:.08em"><span class="help">El número que dejaste en la cafetería al asociarte.</span></div>'+
       '<p class="ferr">'+esc(M.err||'')+'</p><div><button class="btn primary lg" type="submit" '+(M.busy?'disabled':'')+'>'+(M.busy?'Buscando…':'Ver mi tarjeta')+'</button></div></form></section>';
   return '<div class="stack" style="gap:44px">'+
     '<section class="store-h"><span class="logo" style="--s:96px;background:none;border:0">'+MARK.replace('width="34" height="34"','width="96" height="96"')+'</span><div style="min-width:0"><span class="eyebrow">Tienda</span><h1>Tienda Ventiun<span class="go">Go</span></h1>'+
@@ -1269,7 +1284,7 @@ function viewTiendaGeneral(){
       '<div class="perk hi"><h3>Un café por día durante 180 días</h3><p>Pasás por tu cafetería, decís tu nombre y te llevás tu café sin pagar cada mañana.</p></div>'+
       '<div class="perk"><h3>Pagás menos por cada café</h3><p>El abono sale menos que pagar cada café suelto.</p></div>'+
       '<div class="perk"><h3>Precio fijo por seis meses</h3><p>Pagás una vez y tu café no aumenta hasta que termina tu membresía.</p></div>'+
-      '<div class="perk"><h3>Tu tarjeta en el celular</h3><p>Con tu número de socio ves tu consumo cuando quieras.</p></div>'+
+      '<div class="perk"><h3>Tu tarjeta en el celular</h3><p>Con tu número de celular ves tu consumo cuando quieras.</p></div>'+
     '</div></section>'+
     (esSocio()?'':'<section class="join"><div><h2>¿Tenés una cafetería?</h2><p class="muted" style="margin-top:6px">Creá la cuenta de tu cafetería o iniciá sesión para vender membresías y registrar el café de tus socios.</p></div><button class="btn primary lg" data-go="acceso">Crear cuenta o iniciar sesión</button></section>')+
   '</div>';
@@ -1294,7 +1309,7 @@ function viewTienda(){
   if(M.card&&M.cafe===id&&M.cafeData){account='<section class="sec"><div class="sec-h"><span class="eyebrow">Tu cuenta de socio</span><h2>Tu tarjeta de consumo</h2></div>'+viewSocioCard(M.cafeData,M.card)+'</section>'}
   else{
     account='<section class="card acc" id="cuenta-socio"><div class="stack"><span class="eyebrow">¿Querés ser socio?</span><h2>Acercate a '+esc(c.nombre)+'</h2>'+
-      '<p class="muted">La membresía se contrata en el mostrador de la cafetería. Elegís tu plan, pagás los 180 días y te dan tu número de socio para ver tu tarjeta de consumo en esta página.</p></div>'+
+      '<p class="muted">La membresía se contrata en el mostrador de la cafetería. Elegís tu plan, pagás los 180 días y te anotan con tu número de celular para ver tu tarjeta de consumo en esta página.</p></div>'+
       '<ul class="list">'+[
         ['Dirección',esc([c.direccion,c.ciudad].filter(Boolean).join(' · ')||'Consultá en la cafetería')],
         ['Horario del café de socios',esc((c.desde||'08:00')+' a '+(c.hasta||'12:00'))],
@@ -1315,8 +1330,8 @@ function viewTienda(){
     '<section class="sec"><div class="sec-h"><span class="eyebrow">Planes</span><h2>Elegí tu abono</h2></div><div class="plans">'+plan('clasica',pc,sc)+plan('premium',pp,sl)+'</div></section>'+
     '<section class="sec"><div class="sec-h"><span class="eyebrow">Cómo asociarte</span><h2>Tres pasos</h2></div><ol class="steps">'+
       '<li><h3>Pasá por el mostrador</h3><p class="muted">Elegí Clásica o Premium y pagá los 180 días.</p></li>'+
-      '<li><h3>Recibí tu número de socio</h3><p class="muted">Son 6 letras y números, únicos para vos.</p></li>'+
-      '<li><h3>Mirá tu tarjeta</h3><p class="muted">En la tienda, escribí tu número de socio y vas a ver tu consumo.</p></li></ol></section>'+
+      '<li><h3>Dejá tu número de celular</h3><p class="muted">Con ese número vas a entrar a ver tu tarjeta.</p></li>'+
+      '<li><h3>Mirá tu tarjeta</h3><p class="muted">En la tienda, escribí tu número de celular y vas a ver tu consumo.</p></li></ol></section>'+
     '<div><button class="link" data-go="tienda">← Volver a la Tienda VentiunGo</button></div>'+
     (S.cafe?'':'<button type="button" class="link" data-go="acceso" style="display:block;width:100%;text-align:center;font-size:14px;color:var(--muted);padding:8px 0">¿Tenés una cafetería? <b style="color:var(--ring)">Creá tu club de socios en VentiunGo Socios Café</b></button>')+
   '</div>';
@@ -1405,7 +1420,7 @@ function fichaSocio(sel,v){
         ['Días que le quedan','<b class="num">'+P.rest+'</b>'],
         ['Últimos canjes',ult.length?ult.map(function(d){return fmtD(d).slice(0,5)}).join(' · '):'Todavía ninguno']
       ].map(function(r){return '<li><span class="muted">'+r[0]+'</span><span>'+r[1]+'</span></li>'}).join('')+'</ul>'+
-      (sel.codigo?'<p class="help">Para ver su tarjeta, el socio entra a la tienda de '+esc(S.cafe.nombre)+', crea su cuenta de socio y escribe el número <b class="mono">'+esc(sel.codigo)+'</b>.</p>':'')+
+      (sel.codigo?'<p class="help">Para ver su tarjeta, el socio entra a la tienda de '+esc(S.cafe.nombre)+' y escribe '+(telKey(sel.telefono)?'su número de celular <b class="mono">'+esc(sel.telefono)+'</b>':'el número <b class="mono">'+esc(sel.codigo)+'</b> (cargale el celular para que entre con su número)')+'.</p>':'')+
       '<div class="inline">'+(DL?'<button class="btn" data-png="'+sel.id+'">Descargar tarjeta (imagen)</button>':'')+(vg.cls!=='ok'?'<button class="btn" data-act="renovar">Renovar 180 días desde hoy</button>':'')+'<button class="link" data-close>Cerrar tarjeta</button></div>'+
     '</div></div>';
 }
@@ -1933,7 +1948,7 @@ document.addEventListener('submit',function(e){
       function(m){S.setupErr={};S.setupErr[sid]=m;render()});return}
   if(e.target.id==='f-adduser'){addUser(S.cafeId,$('#au-user').value,$('#au-1').value,$('#au-2').value).then(function(){render();toast('Usuario agregado')},function(m){$('#au-err').textContent=m});return}
   if(e.target.id==='f-pass'){setCreds(S.cafeId,S.user,$('#pw-1').value,$('#pw-2').value).then(function(){render();toast('Contraseña guardada')},function(m){$('#pw-err').textContent=m});return}
-  if(e.target.id==='f-num'){var nc=$('#n-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');S.member.code=nc;if(nc.length!==6){S.member.err='El número de socio tiene 6 letras y números.';render();return}buscarSocio(nc);return}
+  if(e.target.id==='f-num'){var rawn=$('#n-code').value.trim(),nc=rawn.toUpperCase().replace(/[^A-Z0-9]/g,'');S.member.tel=rawn;if(telKey(rawn)&&/^[\d\s()+.-]+$/.test(rawn)){buscarTel(rawn);return}if(nc.length===6){buscarSocio(nc);return}S.member.err='Escribí tu número de celular con la característica, por ejemplo 341 562 8884.';render();return}
   if(e.target.id==='f-acc2'){var cf2=$('#a-cafe').value,ac2=$('#a-code2').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
     if(!cf2){S.accErr2='Elegí tu cafetería.';render();return}
     if(ac2.length!==6){S.accErr2='El número de socio tiene 6 letras y números.';render();return}
