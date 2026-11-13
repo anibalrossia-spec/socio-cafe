@@ -1254,6 +1254,7 @@ function buscarSocio(code){
 function esSocio(){return !S.cafe&&!!(S.member.card||memGet())}
 function viewTiendaGeneral(){
   var M=S.member,cafes=S.dir;
+  if(S.shareCafe&&window.VGShare){var _sc=(S.dirAll||cafes||[]).find(function(c){return c.id===S.shareCafe});if(_sc&&_sc.nombre)VGShare.manifest({name:_sc.nombre,start:'?c='+S.shareCafe,description:'Membresía de café en '+_sc.nombre,theme:'#CDB8E8',bg:'#FFFFFF',icons:[['icons/icon-192.png','192x192'],['icons/icon-512.png','512x512'],['icons/icon-maskable-512.png','512x512','maskable']]})}
   var socio=(M.card&&M.cafeData)
     ?'<section class="sec"><div class="sec-h"><span class="eyebrow">Mi tarjeta</span><h2>Tu consumo en '+esc(M.cafeData.nombre)+'</h2></div>'+viewSocioCard(M.cafeData,M.card)+'</section>'
     :'<section class="card acc"><div class="stack"><span class="eyebrow">Soy socio</span><h2>Mirá tu tarjeta de consumo</h2>'+
@@ -1986,7 +1987,7 @@ document.addEventListener('submit',function(e){
   }
 });
 
-try{var _q='';try{_q=new URLSearchParams(location.search).get('c')||''}catch(_){}var _h=_q||location.hash.slice(1);if(/^(u_)?[A-Za-z0-9_-]{12,40}$/.test(_h)){S.view='tienda';S.tiendaId=_h}}catch(_){}
+try{var _q='';try{_q=new URLSearchParams(location.search).get('c')||''}catch(_){}var _h=_q||location.hash.slice(1);if(/^(u_)?[A-Za-z0-9_-]{12,40}$/.test(_h)){S.view='tienda';S.tiendaId=null;S.shareCafe=_h}}catch(_){}
 render();boot();
 })();
 </script>
