@@ -1271,9 +1271,6 @@ function viewTiendaGeneral(){
       '<div class="perk"><h3>Precio fijo por seis meses</h3><p>Pagás una vez y tu café no aumenta hasta que termina tu membresía.</p></div>'+
       '<div class="perk"><h3>Tu tarjeta en el celular</h3><p>Con tu número de socio ves tu consumo cuando quieras.</p></div>'+
     '</div></section>'+
-    '<section class="sec"><div class="sec-h"><span class="eyebrow">Cafeterías adheridas</span><h2>Dónde asociarte</h2></div>'+
-      (cafes.length?'<div class="dir">'+cafes.map(function(c){return '<button class="item" data-tienda="'+esc(c.id)+'">'+logoHTML(c,48)+'<div><b>'+esc(c.nombre)+'</b><span class="muted" style="font-size:13px">'+esc([c.direccion,c.ciudad].filter(Boolean).join(' · '))+'</span><span class="muted" style="font-size:13px;display:block;text-decoration:underline">Ver planes y precios</span></div></button>'}).join('')+'</div>':'<div class="empty">Todavía no hay cafeterías adheridas.</div>')+
-    '</section>'+
     (esSocio()?'':'<section class="join"><div><h2>¿Tenés una cafetería?</h2><p class="muted" style="margin-top:6px">Creá la cuenta de tu cafetería o iniciá sesión para vender membresías y registrar el café de tus socios.</p></div><button class="btn primary lg" data-go="acceso">Crear cuenta o iniciar sesión</button></section>')+
   '</div>';
 }
@@ -1467,8 +1464,6 @@ function viewHome(){
     '</div></section>'+
 
     vgPlansSec()+
-
-    '<section class="sec"><div class="sec-h"><span class="eyebrow">Cafeterías adheridas</span><h2>Ya trabajan con VentiunGo</h2></div>'+dir+'</section>'+
 
     (S.cafe?'':'<section class="join"><div><h2>¿Tenés una cafetería?</h2><p class="muted" style="margin-top:6px">Creá tu cuenta gratis y empezá a vender membresías hoy.</p></div><button class="btn primary lg" data-go="tienda">Entrar a la tienda</button></section>');
 }
