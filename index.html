@@ -393,6 +393,71 @@ p{margin:0}
   function fname(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'socios'}
   window.VGXlsx={build:build,download:download,fname:fname};
 })();
+/* VentiunGo · Compartir la app de cada negocio con sus clientes (enlace, QR e instalación propia) */
+(function(){
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function base(){return location.origin+location.pathname.replace(/[^/]*$/,'')}
+  function toast(msg){
+    var t=document.createElement('div');t.textContent=msg;
+    t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:12px;font:600 14px system-ui,sans-serif;z-index:100000;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center';
+    document.body.appendChild(t);setTimeout(function(){t.remove()},2600);
+  }
+  async function share(o){
+    if(navigator.share){try{await navigator.share({title:o.nombre||'',text:o.text});return}catch(e){if(e&&e.name==='AbortError')return}}
+    window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(o.text),'_blank');
+  }
+  function copy(link){
+    try{navigator.clipboard.writeText(link).then(function(){toast('Enlace copiado 📋')},function(){prompt('Copiá el enlace:',link)})}catch(e){prompt('Copiá el enlace:',link)}
+  }
+  function loadQR(){
+    if(window.QRCode)return Promise.resolve();
+    return new Promise(function(res,rej){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';s.onload=function(){window.QRCode?res():rej(new Error('qr'))};s.onerror=rej;document.head.appendChild(s)});
+  }
+  // o: {nombre, link, color, titulo, sub, archivo}
+  async function qr(o){
+    var color=o.color||'#10b981';
+    var m=document.createElement('div');
+    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif';
+    m.innerHTML='<div style="background:#fff;color:#1f2937;border-radius:18px;width:100%;max-width:360px;padding:20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)">'+
+      '<h3 style="margin:0 0 6px;font-size:18px;font-weight:800">Código QR de '+esc(o.nombre)+'</h3>'+
+      '<p style="margin:0 0 12px;font-size:12px;color:#64748b">Imprimilo o mostralo en el local: tus clientes lo escanean con la cámara, instalan la app y la usan.</p>'+
+      '<div data-qr style="display:flex;justify-content:center;padding:10px;min-height:240px;align-items:center"><span style="font-size:13px;color:#94a3b8">Generando…</span></div>'+
+      '<p style="margin:6px 0 14px;font-size:11px;color:#94a3b8;word-break:break-all">'+esc(o.link)+'</p>'+
+      '<div style="display:flex;gap:8px"><button type="button" data-dl style="flex:1;padding:11px;border:0;border-radius:10px;background:'+color+';color:#fff;font-weight:700;cursor:pointer">Descargar imagen</button>'+
+      '<button type="button" data-x style="flex:1;padding:11px;border:0;border-radius:10px;background:#f1f5f9;color:#475569;font-weight:700;cursor:pointer">Cerrar</button></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click',function(e){if(e.target===m||e.target.closest('[data-x]'))m.remove()});
+    var box=m.querySelector('[data-qr]');
+    try{await loadQR()}catch(e){box.innerHTML='<span style="font-size:13px;color:#dc2626">No se pudo generar el QR. Revisá la conexión.</span>';return}
+    box.innerHTML='';
+    new QRCode(box,{text:o.link,width:220,height:220,colorDark:'#111827',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+    m.querySelector('[data-dl]').addEventListener('click',function(){
+      var qc=box.querySelector('canvas');if(!qc)return;
+      var cv=document.createElement('canvas');cv.width=600;cv.height=760;var cx=cv.getContext('2d');
+      cx.fillStyle='#fff';cx.fillRect(0,0,600,760);cx.fillStyle=color;cx.fillRect(0,0,600,120);
+      cx.fillStyle='#fff';cx.textAlign='center';cx.font='bold 40px sans-serif';cx.fillText(String(o.nombre||'').slice(0,26),300,76);
+      cx.imageSmoothingEnabled=false;cx.drawImage(qc,100,150,400,400);
+      cx.fillStyle='#111827';cx.font='bold 30px sans-serif';cx.fillText(o.titulo||'Escaneá con la cámara',300,620);
+      cx.fillStyle='#64748b';cx.font='22px sans-serif';cx.fillText(o.sub||'Instalá la app en tu celular',300,662);
+      cx.font='18px sans-serif';cx.fillText('VentiunGo',300,730);
+      var a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='QR-'+(o.archivo||'app')+'.png';document.body.appendChild(a);a.click();a.remove();
+    });
+  }
+  // App instalada con el nombre del negocio, que abre directo su página
+  var lastMan='';
+  function manifest(o){
+    try{
+      var b=base(),key=o.name+'|'+o.start;if(key===lastMan)return;lastMan=key;
+      var short=o.name.length>14?o.name.slice(0,14).trim():o.name;
+      var m={name:o.name,short_name:short,description:o.description||'',id:b+o.start,start_url:b+o.start,scope:b,display:'standalone',
+        background_color:o.bg||'#ffffff',theme_color:o.theme||'#10b981',lang:'es-AR',
+        icons:(o.icons||[]).map(function(i){return {src:b+i[0],sizes:i[1],type:'image/png',purpose:i[2]||'any'}})};
+      var l=document.querySelector('link[rel="manifest"]');if(l)l.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(m));
+      var t=document.querySelector('meta[name="apple-mobile-web-app-title"]');if(t)t.content=short;
+    }catch(e){}
+  }
+  window.VGShare={share:share,copy:copy,qr:qr,manifest:manifest,base:base};
+})();
 </script>
 <script src="config.js"></script>
 </head>
@@ -1218,6 +1283,7 @@ function viewAcceso(){
 function viewTienda(){
   if(!S.tiendaId)return viewTiendaGeneral();
   var c=S.tienda,id=S.tiendaId,M=S.member;
+  if(c&&c.nombre&&window.VGShare)VGShare.manifest({name:c.nombre,start:'?c='+id,description:'Membresía de café en '+c.nombre,theme:'#CDB8E8',bg:'#FFFFFF',icons:[['icons/icon-192.png','192x192'],['icons/icon-512.png','512x512'],['icons/icon-maskable-512.png','512x512','maskable']]});
   if(!c)return '<section class="empty">'+(S.tiendaMiss?'Esta cafetería no existe o ya no usa VentiunGo.':'Abriendo la tienda…')+'</section>';
   var pc=Number(c.precioClasica)||0,pp=Number(c.precioPremium)||0,sc=Number(c.precioCafe)||0,sl=Number(c.precioLeche)||0;
   var plan=function(k,precio,suelto){
@@ -1478,6 +1544,7 @@ function tabSoySocio(){
     '<p class="ferr">'+esc(M.lerr||'')+'</p><div><button class="btn primary lg" type="submit">Ver mi tarjeta</button></div>'+
   '</form><aside class="preview-side"><span class="eyebrow">Así se ve</span>'+membCard(c,true)+'</aside></section>';
 }
+function scLink(){return VGShare.base()+'?c='+S.cafeId}
 function exportSociosXlsx(){
   if(!window.VGXlsx||!S.socios.length)return;
   var c=S.cafe||{},h=hoyS();
@@ -1500,7 +1567,7 @@ function exportSociosXlsx(){
 }
 function tabSocios(){
   var rows=S.socios.slice().sort(function(a,b){return (a.nombre||'').localeCompare(b.nombre||'')});
-  return '<div class="stack">'+(rows.length?'<div class="card" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0">Tus socios</h3><span class="muted" style="font-size:13px">'+rows.length+' socios · '+rows.filter(function(s){return vigencia(s).cls!=='bad'}).length+' con membresía vigente</span></div><button class="btn" type="button" data-xlsx>⬇ Descargar Excel</button></div>':'')+'<form id="f-socio" class="card stack" novalidate><h3>Nuevo socio</h3><div class="fgrid">'+
+  return '<div class="stack">'+(S.cafeId?'<div class="card stack" style="gap:10px"><h3 style="margin:0">Compartí la app con tus clientes</h3><p class="muted" style="font-size:13px;margin:0">La instalan en el celular con el nombre de tu cafetería, ven tus planes y consultan su tarjeta de consumo.</p><p class="mono" style="font-size:12px;word-break:break-all;background:var(--surface-2);padding:8px 10px;border-radius:10px;margin:0">'+esc(scLink())+'</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn sm" type="button" data-sharecopy>Copiar enlace</button><button class="btn sm primary" type="button" data-shareapp>📲 Compartir la app</button><button class="btn sm" type="button" data-shareqr>Código QR</button></div></div>':'')+(rows.length?'<div class="card" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0">Tus socios</h3><span class="muted" style="font-size:13px">'+rows.length+' socios · '+rows.filter(function(s){return vigencia(s).cls!=='bad'}).length+' con membresía vigente</span></div><button class="btn" type="button" data-xlsx>⬇ Descargar Excel</button></div>':'')+'<form id="f-socio" class="card stack" novalidate><h3>Nuevo socio</h3><div class="fgrid">'+
     '<div class="field"><label class="lbl" for="s-n">Nombre y apellido</label><input class="inp" id="s-n" required></div>'+
     '<div class="field"><label class="lbl" for="s-t">Teléfono</label><input class="inp" id="s-t" inputmode="tel"></div>'+
     '<div class="field"><label class="lbl" for="s-p">Plan</label><select class="inp" id="s-p"><option value="clasica">Clásica · café solo'+(S.cafe.precioClasica?' · '+money(S.cafe.precioClasica):'')+'</option><option value="premium">Premium · café con leche'+(S.cafe.precioPremium?' · '+money(S.cafe.precioPremium):'')+'</option></select></div>'+
@@ -1803,6 +1870,9 @@ document.addEventListener('click',function(e){if(e.target.closest('[data-reload]
 /* ---------- eventos ---------- */
 document.addEventListener('click',function(e){
   if(e.target.closest('[data-xlsx]')){exportSociosXlsx();return}
+  if(e.target.closest('[data-sharecopy]')){VGShare.copy(scLink());return}
+  if(e.target.closest('[data-shareapp]')){var nn=(S.cafe&&S.cafe.nombre)||'nuestra cafetería';VGShare.share({nombre:nn,text:'📲 ¡Sumate a los socios de '+nn+'!\n\n1️⃣ Abrí este enlace: '+scLink()+'\n2️⃣ Tocá «Instalar» para tener la app en tu pantalla de inicio.\n3️⃣ Mirá los planes y consultá tu tarjeta de consumo con tu número de socio.'});return}
+  if(e.target.closest('[data-shareqr]')){VGShare.qr({nombre:(S.cafe&&S.cafe.nombre)||'Mi cafetería',link:scLink(),color:'#8A73C4',titulo:'Escaneá y sumate como socio',sub:'Instalá la app en tu celular',archivo:'cafe'});return}
   var mp=e.target.closest('[data-png],[data-mpng],[data-mclear]');if(mp){
     if(S.view==='tienda'){if(mp.hasAttribute('data-mclear'))salirSocio();else if(mp.hasAttribute('data-mpng'))savePNG(S.member.cafeData,S.member.card);return}
     if(mp.hasAttribute('data-mclear')&&S.view==='panel'){S.member.lcode=null;S.member.lcodeIn='';S.member.lerr='';render();return}
@@ -1915,7 +1985,7 @@ document.addEventListener('submit',function(e){
   }
 });
 
-try{var _h=location.hash.slice(1);if(/^u_[A-Za-z0-9_-]+$/.test(_h)){S.view='tienda';S.tiendaId=_h}}catch(_){}
+try{var _q='';try{_q=new URLSearchParams(location.search).get('c')||''}catch(_){}var _h=_q||location.hash.slice(1);if(/^(u_)?[A-Za-z0-9_-]{12,40}$/.test(_h)){S.view='tienda';S.tiendaId=_h}}catch(_){}
 render();boot();
 })();
 </script>
