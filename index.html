@@ -868,8 +868,8 @@ function validarUsuario(u,p,p2){
   return '';}
 function logout(){if(window.VGSubs)VGSubs.stop();S.subs=null;S.subsAsked=false;vistaPut(null);S.restore=null;if(AUTH)AUTH.signOut();S.soporte=false;S.cafe=null;S.cafeId=null;S.sel=null;S.q='';S.loginErr='';openTienda(null);toast('Sesión cerrada')}
 var SUP_USER='ventiungo',SUP_EMAIL='soporte@ventiungo.app';
-function esSoporteU(u){return !!(u&&u.email===SUP_EMAIL)}
 var SUP_RECOVERY='anibalrossia@gmail.com',WA_SUP='5493415628884';
+function esSoporteU(u){return !!(u&&(u.email===SUP_EMAIL||u.email===SUP_RECOVERY))}
 function loginSoporte(pass){
   S.loginBusy=true;render();
   var NOK=/user-not-found|invalid-credential|invalid-login|wrong-password|invalid-email/;
